@@ -1,0 +1,190 @@
+---
+title: "Getting started with R"
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(gradethis)
+knitr::opts_chunk$set(echo = FALSE)
+tutorial_options(exercise.eval = FALSE)
+knitr::opts_chunk$set(exercise.checker = gradethis::grade_learnr)
+
+```
+
+
+## Using the R console
+
+Anything that you type into R will be evaluated and the result will be printed to the screen. 
+
+First let's try some simple math. Enter `1 + 1` into the console below, and then click the "Run Code" button, which will execute your command:
+
+```{r one-plus-one, exercise=TRUE}
+
+```
+
+You can see the result (2) printed below the code.
+
+We can also print pieces of text, which are referred to as "strings".  
+Type "Hello, world!" in the console below -- be sure to include the quotes!
+
+```{r hello-world, exercise=TRUE}
+
+```
+
+Now try multiplying 5 times 4, using the multiplication operator `*`.
+
+
+```{r five-times-four, exercise=TRUE}
+
+```
+
+## Logical values
+
+We will often want to determine whether some particular expression is true or false - we refer to these as "logical" values.  
+
+Run the following code, which executes the expression to test whether three is less than four.
+
+```{r three-gt-four, exercise=TRUE}
+3 < 4
+```
+
+Now enter the expression to test whether 5 is greater than 10:
+
+```{r five-gt-ten, exercise=TRUE}
+
+```
+
+One very common operation is to test whether two numbers are equal.  To do this, we use the double-equals sign (`==`).  
+
+Execute the following code to test whether one plus two is equal to four:
+
+```{r one-plus-two-equals-four, exercise=TRUE}
+1 + 2 == 4
+```
+
+Now enter the expression to test whether three times three is equal to nine:
+
+```{r three-times-three-equals-nine, exercise=TRUE}
+
+```
+
+One important thing to know is that R treats TRUE the same as 1, and FALSE the same as zero.  This will become very useful when we start working with probabilities.  
+
+Enter an expression to test whether TRUE (capitalization matters here) is equal to 1:
+
+```{r true-equals-one, exercise=TRUE}
+
+```
+
+And do the same to test whether FALSE is equal to zero:
+
+```{r false-equals-zero, exercise=TRUE}
+
+```
+
+## Variables
+
+It is very common in programming to use variables to store particular values.  
+
+For example, let's say that we want to store today's temperature in a variable.  It's always good to name our variables in an explanatory way so that we know what they contain.  There are two ways that we can assign a value to variable in R: using either the ``<-`` operator or the ``=`` operator.  We will use ``<-`` since this is most customary in R.
+
+In this case, let's create a variable called ``todays_temperature_F`` (for today's temperature in Farenheit) and set it to 78:
+
+```{r todays-temp, exercise=TRUE}
+todays_temperature_F <- 78
+```
+
+You will notice that R does not create any output when you execute this command.
+
+Now try typing the variable name (``todays_temperature_F``) in the console on the line after the variable is defined, and see what the output is:
+
+```{r setup-temp, include=FALSE}
+todays_temperature_F <- 78
+todays_temperature_C <- (todays_temperature_F - 32) * (5/9)
+
+farenheit_to_celsius = function(temp_F){
+  return((temp_F - 32) * (5/9))
+}
+
+```
+
+```{r todays-temp-print, exercise=TRUE, exercise.setup = "setup-temp"}
+
+```
+
+Our variable can now be used in place of the original result. Let's create a new variable that converts this value to Celsius, using the following formula:
+
+$$
+T_{Celsius} = (T_{Farenheit} - 32) * \frac{5}{9}
+$$
+
+```{r todays-temp-convert, exercise=TRUE, exercise.setup = "setup-temp"}
+todays_temperature_C = (todays_temperature_F - 32) * (5/9)
+todays_temperature_C
+```
+
+#### Exercise
+
+Enter the code to test whether today's temperature in Celsius is above freezing (which is zero Celsius):
+
+```{r todays-temp-above-freezing, exercise=TRUE, exercise.setup = "setup-temp"}
+
+```
+
+```{r todays-temp-above-freezing-solution, exercise.setup = "setup-temp"}
+todays_temperature_C > 0
+```
+
+```{r todays-temp-above-freezing-check, exercise.setup = "setup-temp"}
+grade_code(incorrect='Try again...')
+```
+
+## Using functions
+
+A function in R is similar to a function in mathematics: It takes in an input, and returns an output.  For example, we might have a function (let's call it ``farenheit_to_celsius()``) that would take in a temperature in Farenheit and return the value converted to Celsius.
+
+If we want to apply this function to our temperature, we simply call the function with our variable as the *argument* to the function, which is contained in the parentheses after the function name:
+
+```{r apply_f_to_c, exercise=TRUE, exercise.setup = "setup-temp"}
+farenheit_to_celsius(todays_temperature_F)
+```
+
+Because we didn't assign the output from the function to a new variable, R prints the value to the console.
+
+Many functions can accept multiple values. For example, let's say that we want to sum of three numbers:
+
+```{r take_sum, exercise=TRUE}
+sum(4, 7, 9)
+```
+
+To find out more about a function, you can use the question mark sign to get help.  For example, let's say that I have asked you to use the ``rep()`` function to create a set of repeated numbers.  To learn more about that function, you could do the following:
+
+```{r get_help_rep, exercise=TRUE}
+?rep
+```
+
+Some functions, including ``rep()``, have additional arguments that are named.  For example, if you want to rep to repeat the number 5 seven times, you would set the "times" argument to 7:
+
+```{r rep_5_7, exercise=TRUE}
+
+rep(5, times=7)
+```
+
+#### Exercise
+
+In the following console, enter the code that would be necessary to compute the cosine of 2 times pi.  Note that ``pi`` is a built-in variable in R that contains the value for pi, so you don't need to type in the actual number.  The cosine is computed using the ``cos()`` function.  Click "Submit Answer" to check whether your answer is correct.
+
+```{r cos_2_pi, exercise=TRUE}
+
+```
+
+```{r cos_2_pi-check}
+grade_result(
+  pass_if(~ identical(.result, cos(2*pi)), "Good job!"),  
+  fail_if(~ TRUE, "Not quite right, try again!.")
+
+)
+```
+
