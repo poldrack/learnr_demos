@@ -29,8 +29,8 @@ docker-run-simple: # run shiny server
 	docker run -p 3838:3838 --rm $(DOCKER_USERNAME)/${CONTAINER_NAME}
 
 docker-run: 
-	docker run -d -p 80:3838 $(DOCKER_USERNAME)/${CONTAINER_NAME}
-# -v /srv/shinyapps/:/srv/shiny-server/ -v /srv/shinylog/:/var/log/shiny-server/ \
+	docker run --rm -d -v /srv/shinyapps/:/srv/shiny-server/ -v /srv/shinylog/:/var/log/shiny-server/ \
+	-p 80:3838 $(DOCKER_USERNAME)/${CONTAINER_NAME}
     	
 
 shell: guard-DOCKER_USERNAME
