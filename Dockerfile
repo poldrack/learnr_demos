@@ -22,8 +22,7 @@ RUN install2.r --error \
     && rm -rf /tmp/downloaded_packages/ /tmp/*.rds
 
 WORKDIR /srv/shiny-server
-RUN git clone https://github.com/poldrack/learnr_demos.git
+COPY ./shiny/ /srv/shiny-server/demos/
 RUN sudo chown -R shiny /srv/shiny-server
 
 ## assume shiny app is in build folder /shiny
-## COPY ./shiny/ /srv/shiny-server/myapp/
