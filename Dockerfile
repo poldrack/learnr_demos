@@ -20,6 +20,13 @@ RUN install2.r --error \
     ## clean up
     && rm -rf /tmp/downloaded_packages/ /tmp/*.rds
 
+ ARG UNAME=ubuntu
+ ARG UID=1000
+ ARG GID=1000
+ RUN groupadd -g $GID $UNAME
+ RUN useradd -m -u $UID -g $GID -s /bin/bash $UNAME
+ USER $UNAME
+
 ## assume shiny app is in build folder /shiny
-COPY ./shiny/ /srv/shiny-server/myapp/
+## COPY ./shiny/ /srv/shiny-server/myapp/
 
