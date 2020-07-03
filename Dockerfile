@@ -5,6 +5,7 @@ MAINTAINER Mark Edmondson (r@sunholo.com)
 # install R package dependencies
 RUN apt-get update && apt-get install -y \
     libssl-dev \
+    git \
     ## clean up
     && apt-get clean \ 
     && rm -rf /var/lib/apt/lists/ \ 
@@ -20,9 +21,9 @@ RUN install2.r --error \
     ## clean up
     && rm -rf /tmp/downloaded_packages/ /tmp/*.rds
 
-USER shiny
 WORKDIR /srv/shiny-server
 RUN git clone https://github.com/poldrack/learnr_demos.git
+RUN sudo chown -R shiny /srv/shiny-server
 
 ## assume shiny app is in build folder /shiny
 ## COPY ./shiny/ /srv/shiny-server/myapp/
