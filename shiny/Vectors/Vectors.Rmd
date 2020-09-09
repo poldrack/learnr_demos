@@ -12,369 +12,279 @@ tutorial_options(exercise.eval = FALSE)
 knitr::opts_chunk$set(exercise.checker = gradethis::grade_learnr)
 ```
 
+## Vectors
+
 In this exercise we will go over how to work with vectors.  A vector is a variable that contains more than one value.  For example, let's say you wanted to create a list of states that are not part of the contiguous United States.  You would create that using the ``c()`` function (which stands for "Combine"):
 
-
 ```{r states, exercise=TRUE}
-c('Hawaii', 'Alaska')
+c( 'Alaska', 'Hawaii')
 ```
 
-A vector can hold any kind of information, as long as all of the entries are of the same type (such as a number or a character string).  Let's say that we want to create a vector containing the year when each state was admitted to the United States: 1959 for Alaska, and 
-#### Vectors
-A vector's values can be numbers, strings, logical values, or any
-other type, as long as they're all the same type. Try creating a vector of
-numbers, like this:
-  
-The c function (c is short for Combine) creates a new vector by combining a list of values.
-```{r}
-c(4, 7, 9)
+A vector can hold any kind of information, as long as all of the entries are of the same type (such as a number or a character string).  Let's say that we want to create a vector containing the population of each state: 731,545 for Alaska, and 1,415,872 for Hawaii.
 
+```{r populations, exercise=TRUE}
+c(731415, 1415872)
 ```
 
-Now try creating a vector with strings:
-  
-Vectors cannot hold values with different modes (types). Try mixing modes and
-see what happens:
-```{r}
-c('a', 'b', 'c')
-c(1, TRUE, "three")
+Note that we don't include the commas in numbers, since R uses commas to separate the different elements of the vector, so it would misinterpret them.
+
+Vectors cannot hold values with different modes (types). Let's see what happens if we try to mix the state names (which are character strings) and the population values (which are numeric) within a single vector:
+
+```{r mixed_vector, exercise=TRUE}
+c( 'Alaska', 'Hawaii', 731415, 1415872)
 
 ```
   
-All the values were converted to a single mode (characters) so that the vector
-can hold them all.
+If we look at the result, we see that the numbers are surrounded by quotation marks, which means that R is now treating them as strings rather than numbers.  Later we will see better ways to mix together different types of data within a single variable, using what we call *data frames*.
 
-#### Sequence Vectors
-If you need a vector with a sequence of numbers you can
-create it with start:end notation. Let's make a vector with values from 5
-through 9:
+## Sequences
 
-```{r}
-5:9
+It's often useful to generate a sequence of numbers.  For example, let's say that you want to generate all of the numbers from 1 to 7, corresponding to the seven days of the week.
+You can do this using the following notation:  
+
+*(starting value):(ending value)*
+
+For example:
+
+```{r sequence, exercise=TRUE}
+1:7
 ```
 
 
-A more versatile way to make sequences is to call the seq function. Let's do
-the same thing with seq:
+R provides a function called ``seq()`` that is more flexible for generating sequences.
   
-```{r}
-seq(5, 9)
+```{r seqfunc, exercise=TRUE}
+seq(1, 7)
 
 ```
 
-seq also allows you to use increments other than 1. Try it with steps of 0.5:
-  
-```{r}
-seq(5, 9, 0.5)
+One useful feature of ``seq()`` is that we can use arbitrary increments.  Let's say that we wanted to generate values from zero to one, in steps of 0.1  We could do that as follows:
+
+```{r seqincrement, exercise=TRUE}
+seq(0, 1, 0.1)
 
 ```
 
-Now try making a vector with integers from 9 down to 5:
-  
-```{r}
-9:5
-seq(9,5,-0.5)
+We can also use a negative increment to go backwards. Let's say that we want to count how many days are left in the week, from 6 to zero:
+
+```{r seqnegincrement, exercise=TRUE}
+seq(6, 0, -1)
 ```
 
-#### Vector Access
+#### Exercise
 
-We're going to create a vector with some strings in it for you, and store it in
-the sentence variable.
+Enter the code to generate values starting at five times pi and ending at zero, in steps of pi divided by 2:
 
-You can retrieve an individual value within a vector by providing its numeric
-index in square brackets. Try getting the third value:
-
-```{r}
-sentence <- c('walk', 'the', 'plank')
-sentence[3]
+```{r seq_exercise, exercise=TRUE}
 
 ```
 
-Many languages start array indices at 0, but R's vector indices start at 1.
-Get the first value by typing:
-  
-```{r}
-sentence[1]
+```{r seq_exercise-solution}
+seq(5 * pi, 0, -pi/2)
+```
+
+```{r seq_exercise-check}
+grade_code(incorrect='Try again...')
+```
+
+
+## Accessing the elements of a vector
+
+We often want to access a single element within a vector.  For example, let's say that we have a vector containing an individual's first, middle, and last name:
+
+```{r setup-names, include=FALSE}
+names_vector <- c('Russell', 'Allan', 'Poldrack')
 
 ```
 
-You can assign new values within an existing vector. Try changing the third word to "dog":
-  
-```{r}
-sentence[3] <- "dog"
-print(sentence)
+
+```{r names, exercise=TRUE}
+names_vector <- c('Russell', 'Allan', 'Poldrack')
+names_vector
 ```
 
-If you add new values onto the end, the vector will grow to accommodate them.
-Let's add a fourth word:
 
-```{r}
-sentence[4] <- 'to'
-print(sentence)
+Now let's say that we want to extract the middle name from this vector.  We can extract the element in any position by using the position surrounded by square brackets. Since the middle name is in the second position, we would use ``[2]``:  
+
+```{r get_first_name, exercise=TRUE, exercise.setup="setup-names"}
+names_vector[2]
 ```
 
-You can use a vector within the square brackets to access multiple values. Try
-getting the first and third words:
+If you have programmed in other languages, you may know that it's common for other languages to start their indexing at zero rather than one.  It's just one of those features of R that you have to get accustomed to if you have experience in other languages.
 
-```{r}
-sentence[c(1, 3)]
+We can also use the same indexing to assign new values to elements of a vector.  It turns out that the earlier vector misspelled my middle name -- it should be 'Alan' -- so we can fix it like this:
+
+```{r fixname, exercise=TRUE, exercise.setup="setup-names"}
+names_vector[2] <- 'Alan'
+names_vector
+```
+
+```{r names-fixed, include=FALSE}
+names_vector <- c('Russell', 'Alan', 'Poldrack')
+```
+
+We can also add a new value to the end of the vector, by using the next index. Let's say we want to add my degree:
+
+```{r addelement, exercise=TRUE, exercise.setup="names-fixed"}
+names_vector[4] <- 'Ph.D.'
+names_vector
+```
+
+```{r names-fixed2, include=FALSE}
+names_vector <- c('Russell', 'Alan', 'Poldrack', 'Ph.D.')
+```
+
+Sometimes we may want to extract several values from a vector. We can do this by using a another vector as the index.  Let's say that we want to extract just the first and last name from the vector above.  We would pass another vector containing 1 and 3 (the positions of my first and last name):
+
+```{r extract_multiple, exercise=TRUE, exercise.setup='names-fixed2'}
+names_vector[c(1, 3)]
 
 ```
+
+We can also use a sequence to extract a set of values.  Let's say that we wanted to get my name, leaving out the degree:
 
 This means you can retrieve ranges of values. Get the second through fourth words:
 
-```{r}
-sentence[2:4]
+```{r getnames, exercise=TRUE, exercise.setup='names-fixed2'}
+names_vector[1:3]
+```
+
+#### Exercise
+
+First, create a vector variable called ``first_five_letters`` that contains the first five letters in the alphabet in lower case:
+
+```{r first_five_letters, exercise=TRUE}
 
 ```
 
-You can also set ranges of values; just provide the values in a vector. Add
-words 5 through 7:
-
-```{r}
-sentence[5:7] <- c('the', 'poop', 'deck')
-print(sentence)
+```{r first_five_letters-solution}
+first_five_letters <- c('a', 'b', 'c', 'd', 'e')
 ```
 
-Now try accessing the sixth word of the sentence vector:
-
-```{r}
-sentence[6]
-
+```{r first_five_letters-check}
+grade_code()
 ```
 
-#### Vector Names
+Now, using a vector index to extract just the vowels ('a' and 'e') and store them to a new variable called ``vowels_only``:
 
-For this challenge, we'll make a 3-item vector for you, and store it in the ranks variable.
-
-You can assign names to a vector's elements by passing a second vector filled
-with names to the names assignment function, like this:
-
-```{r}
-ranks <- 1:3
-names(ranks) <- c("first", "second", "third")
+```{r vowels_only, exercise=TRUE, exercise.setup='first_five_letters-solution'}
 
 ```
 
-Assigning names for a vector can act as useful labels for the data. Below, you
-can see what our vector looks like now.
+```{r vowels_only-solution}
+vowels_only <- first_five_letters[c(1, 5)]
+```
 
-You can also use the names to access the vector's values. Try getting the value
-for the "first" rank:
-  
-```{r}
-ranks
-ranks[1]
+```{r vowels_only-check}
+grade_code()
+```
+
+## Vector Math
+
+You can perform most mathematical operations on vectors just as you would on a variable containing a single value.  
+
+Let's say that we were to measure the high temperature in Palo Alto for five consecutive days, and store it to a variable called ``daily_temperature``:
+
+```{r dailytemp, exercise=TRUE}
+daily_temperature <- c(78, 76, 77, 74, 73)
+```
+
+Now let's say that we discover a problem with our thermometer, such that it is consistently two degrees higher than the true temperature. Thus, in order to fix our measurements, we need to subtract two from each entry. We can do this by simply subtracting two fromm the vector:
+
+```{r dailytemp-setup}
+daily_temperature <- c(78, 76, 77, 74, 73)
+daily_temperature_fixed <- daily_temperature - 2
+temp_over_72 <- daily_temperature_fixed > 72
+daily_temperature_missing <- daily_temperature_fixed
+daily_temperature_missing[3] <- NA
+```
+
+```{r dailytemp_fix, exercise=TRUE, exercise.setup='dailytemp-setup'}
+daily_temperature_fixed <- daily_temperature - 2
+daily_temperature_fixed
+```
+
+Now say that we want to convert these all to Celsius, using the formula that we used in the earlier example:
+
+
+$$
+T_{Celsius} = (T_{Farenheit} - 32) * \frac{5}{9}
+$$
+
+We can simply apply that math to our vector:
+
+```{r convert_temp, exercise=TRUE, exercise.setup='dailytemp-setup'}
+daily_temperature_C <- (daily_temperature_fixed - 32) / (5 / 9)
+daily_temperature_C
+```
+
+## Comparing vectors
+
+We often want to perform a test on each element of a vector.  For example, let's say that we want to know whether the temperature each day is above 72 (which we refer to in Palo Alto as "hot").  We can simply apply our test to the vector, and get back a vector of logical values as the result.
+
+```{r test72, exercise=TRUE, exercise.setup='dailytemp-setup'}
+temp_over_72 <- daily_temperature_fixed > 72
+temp_over_72
+```
+
+#### Exercise
+
+I would like to know how many of the days had a temperature above 72.  Use the ``sum()`` function with the ``temp_over_72`` variable to compute how many days had a temperature over 72, and save this to a new variable called ``days_over_72``. Hint: Remember that R treats ``TRUE`` identically to the number one.
+
+
+```{r sum_over_72, exercise=TRUE, exercise.setup='dailytemp-setup'}
 
 ```
 
-Now set the current value for the "third" rank to a different value using the
-name rather than the position.
+```{r sum_over_72-solution}
+days_over_72 <- sum(temp_over_72)
+```
 
-```{r}
-ranks["third"] <- 4
+```{r sum_over_72-check}
+grade_code()
+```
+
+This trick will become very important later on when we begin to compute probabilities.
+
+## NA Values 
+
+When we are working with real data, it is common to encounter examples where some of the data are missing. For example, let's say that the thermometer malfunctioned on day three, so that were missing the data for that day.  Rather than eliminating this measurement, we generally want to indicate that it is missing.  R has a built-in value called ``NA`` that denotes that the data are "not available."  Let's make that change to our data:
+
+```{r temp_na, exercise=TRUE,exercise.setup='dailytemp-setup'}
+daily_temperature_missing <- daily_temperature_fixed
+daily_temperature_missing[3] <- NA
+daily_temperature_missing
+```
+
+Now let's say that we want to compute the average temperature for those days, which we can compute using the built-in ``mean()`` function:
+
+```{r meanna, exercise=TRUE, exercise.setup='dailytemp-setup'}
+mean(daily_temperature_missing)
+```
+
+Since one of the values is NA, the mean function doesn't know what to do with it so it returns an NA value.  Many functions have a built-in way to deal with missing values.  Take a look at the help for the ``mean()`` function:
+
+```{r meanhelp, exercise=TRUE}
 
 ```
 
-#### Plotting One Vector
+You will see that one of its arguments is ``na.rm`` which tells it to ignore all NA values.
 
-The barplot function draws a bar chart with a vector's values. We'll make a new
-vector for you, and store it in the vesselsSunk variable.
+#### Exercise
 
-Now try passing the vector to the barplot function:
-  
-```{r}
-vesselsSunk <- c(4, 5, 1)
-barplot(vesselsSunk)
+Compute the mean of ``daily_temperature_missing``, setting the na.rm argument to true:
+
+
+```{r mean_narm, exercise=TRUE, exercise.setup='dailytemp-setup'}
 
 ```
 
-If you assign names to the vector's values, R will use those names as labels on
-the bar plot. Let's use the names assignment function again:
-  
-```{r}
-names(vesselsSunk) <- c("England", "France", "Norway")
-
+```{r mean_narm-solution}
+mean(daily_temperature_missing, na.rm=TRUE)
 ```
 
-Now, if you call barplot with the vector again, you'll see the labels:
-
-```{r}
-barplot(vesselsSunk)
-
+```{r mean_narm-check}
+grade_code()
 ```
 
-Now, try calling barplot on a vector of integers ranging from 1 through 100:
-
-```{r}
-barplot(1:100)
-
-```
-
-#### Vector Math
-
-Most arithmetic operations work just as well on vectors as they do on single
-values. We'll make another sample vector for you to work with, and store it in
-the a variable.
-
-If you add a scalar (a single value) to a vector, the scalar will be added to
-each value in the vector, returning a new vector with the results. Try adding 1
-to each element in our vector:
-  
-```{r}
-a <- c(1, 2, 3)
-a
-a + 1
-
-```
-
-The same is true of division, multiplication, or any other basic arithmetic.
-Try dividing our vector by 2:
-  
-```{r}
-a / 2
-```
-
-Now try multiplying our vector by 2:
-  
-```{r}
-a * 2
-```
-
-If you add two vectors, R will take each value from each vector and add them.
-We'll make a second vector for you to experiment with, and store it in the b
-variable.
-
-Try adding it to the a vector:
-
-```{r}
-b <- c(4, 5, 6)
-a + b
-
-```
-
-Now try subtracting b from a:
-
-```{r}
-a - b
-```
-
-You can also take two vectors and compare each item. See which values in the a
-vector are equal to those in a second vector:
-
-```{r}
-a == c(1, 99, 3)
-
-```
-
-Notice that R didn't test whether the whole vectors were equal; it checked each
-value in the a vector against the value at the same index in our new vector.
-
-Check if each value in the a vector is less than the corresponding value in
-another vector:
-  
-```{r}
-a < c(1, 99, 3)
-
-```
-
-Functions that normally work with scalars can operate on each element of a
-vector, too. Try getting the sine of each value in our vector:
-  
-```{r}
-sin(a)
-
-```
-
-Now try getting the square roots with sqrt:
-  
-```{r}
-sqrt(a)
-
-```
-
-#### Scatter Plots
-
-The plot function takes two vectors, one for X values and one for Y values, and
-draws a graph of them.
-
-Let's draw a graph showing the relationship of numbers and their sines.
-
-First, we'll need some sample data. We'll create a vector for you with some
-fractional values between 0 and 20, and store it in the x variable.
-
-Now, try creating a second vector with the sines of those values:
-
-```{r}
-x <- seq(1, 20, 0.1)
-y <- sin(x)
-
-```
-
-Then simply call plot with your two vectors:
-
-```{r}
-plot(x, y)
-
-```
-
-Great job! Notice on the graph that values from the first argument (x) are
-used for the horizontal axis, and values from the second (y) for the vertical.
-
-Your turn. We'll create a vector with some negative and positive values for
-you, and store it in the values variable.
-
-We'll also create a second vector with the absolute values of the first, and
-store it in the absolutes variable.
-
-Try plotting the vectors, with values on the horizontal axis, and absolutes on
-the vertical axis.
-
-```{r}
-values <- -10:10
-absolutes <- abs(values)
-plot(values, absolutes)
-
-```
-
-#### NA Values 
-Sometimes, when working with sample data, a given value isn't
-available. But it's not a good idea to just throw those values out. R has a
-value that explicitly indicates a sample was not available: NA. Many functions
-that work with vectors treat this value specially.
-
-We'll create a vector for you with a missing sample, and store it in the a variable.
-
-Try to get the sum of its values, and see what the result is:
-  
-```{r}
-a <- c(1, 3, NA, 7, 9)
-sum(a)
-
-```
-
-The sum is considered "not available" by default because one of the vector's
-values was NA. This is the responsible thing to do; R won't just blithely add
-up the numbers without warning you about the incomplete data. We can
-explicitly tell sum (and many other functions) to remove NA values before they
-do their calculations, however.
-
-Remember that command to bring up help for a function? Bring up documentation
-for the sum function:
-  
-```{r}
-help(sum)
-
-```
-
-As you see in the documentation, sum can take an optional named argument,
-na.rm. It's set to FALSE by default, but if you set it to TRUE, all NA
-arguments will be removed from the vector before the calculation is performed.
-
-Try calling sum again, with na.rm set to TRUE:
-
-```{r}
-sum(a, na.rm = TRUE)
-
-```
 
