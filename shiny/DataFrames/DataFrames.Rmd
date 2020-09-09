@@ -1,0 +1,184 @@
+---
+title: "Data Frames"
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(gradethis)
+library(tidyverse)
+knitr::opts_chunk$set(echo = FALSE)
+tutorial_options(exercise.eval = FALSE)
+knitr::opts_chunk$set(exercise.checker = gradethis::grade_learnr)
+```
+
+## Data Frames
+
+A data frame is a way of packaging together a number of variables that reflect the same observations, very similar to the spreadsheets that you have probably encountered before.  Each column in the table reflects a single variable, and each row reflects a single observation across those variables.  For example, let's combine the data on state populations from the previous exercise into a single data frame; we will also add the data for California and Texas.  We will use a function called `tibble()` to create a fancy form of a data frame known as a *tibble*.  This function is part of a set of functions known as the *Tidyverse*, which you will learn more about as we go along.  
+
+```{r stateDF, exercise=TRUE}
+state_df <- tibble(state=c( 'Alaska', 'Hawaii', 'California', 'Texas'),
+                       population=c(731415, 1415872, 39512223, 28995881))
+state_df
+```
+
+This should create a data frame with four rows and two columns; because we put the name of the variable at the bottom of the cell, it will also print that data frame to the screen.  Each state is represented by a row, and we have two variables: the name of the state (called `state`) and the population (called `population`).
+
+Another function that we can use to get an overview of the contents of a data frame is `glimpse()`:
+
+```{r setup-states, include=FALSE}
+state_df <- tibble(state=c( 'Alaska', 'Hawaii', 'California', 'Texas'),
+                       population=c(731415, 1415872, 39512223, 28995881))
+
+```
+
+```{r glimpse_stateDf, exercise=TRUE, exercise.setup="setup-states"}
+glimpse(state_df)
+```
+
+This tell us the number of rows and columns in the data frame, and also shows us the values of each.  `glimpse()` can be useful to peek at a large data frame, since it provides a compact summary of all of the variables.
+
+## Working with data frames
+
+### Selecting columns (variables) by name
+
+There are two different ways to select a column (that is, one of the variables).  First we, can select it by name, using the `$` operator.  For example, to select the state variable, we would enter `state_df$state`:
+
+```{r show_state, exercise=TRUE, exercise.setup="setup-states"}
+state_df$state
+```
+
+This returns a vector that contains the values from that column.  
+
+#### Exercise
+
+Enter the code that will extract the `population` variable by name from the data frame:
+
+```{r show_pop, exercise=TRUE, exercise.setup="setup-states"}
+
+```
+
+```{r show_pop-solution}
+state_df$population
+```
+
+```{r show_pop-check}
+grade_code(incorrect='Try again...')
+```
+
+Note that when we refer to the variable by name using the `$` operator, the output is a vector. What if we wanted to create a new data frame containing just our variable of interest?  To do this, we can use the `select()` function.  The first argument to the `select()` function is the name of the data frame, and the second is the name of the variable (or variables) that we would like to select:
+
+```{r select_population, exercise=TRUE, exercise.setup="setup-states"}
+select(state_df, population)
+```
+
+The output from this function is a new data frame with a single column for the population variable.
+
+
+### Adding a new column to a data farme
+
+Often we would like to add a new column to an existing data frame.  In this case, let's add a column with the state abbreviations for each state.  To do this, we can use the `mutate()` function.  This function takes the name of the original data frame as its first argument, and then allows you to specify the definition of any new variables you'd like to add.  In this case, we will save the output from that function to a new data frame; it's generally good practice to use different names whenever you create a new variable, so that you don't get confused about what's what.
+
+```{r add_abbrev, exercise=TRUE, exercise.setup="setup-states"}
+state_df_with_abbrev = mutate(state_df,
+                              state_abbrev=c('AK', 'HI', 'CA', 'TX'))
+state_df_with_abbrev
+```
+
+```{r setup-abbrev, exercise.setup="setup-states"}
+state_df_with_abbrev = mutate(state_df,
+                              state_abbrev=c('AK', 'HI', 'CA', 'TX'))
+
+```
+
+You can also use existing variables within mutate.  For example, let's say that we wanted to create a new variable that expressed population in terms of millions.  We could do this:
+
+```{r mutate_existing, exercise=TRUE, exercise.setup="setup-states"}
+
+mutate(state_df,
+       population_millions=population/1000000)
+```
+
+### Selecting multiple columns
+
+Sometimes we might want to select more than one column from the data frame.  We can do this by providing the `select()` function with a vector of variable names rather than a single name.  Let's select the *population* and *state_abbrev* variables from the data frame that we generated in the previous cell:
+
+```{r select_multiple, exercise=TRUE, exercise.setup="setup-abbrev"}
+select(state_df_with_abbrev, c(state_abbrev, population))
+```
+
+This creates a new data frame containing only the two variables that we wanted to select.  We can also remove a variable by putting a minus sign in front of its name; thus, we could acheive the same outcome by removing the *state* variable:
+
+```{r select_negative, exercise=TRUE, exercise.setup="setup-abbrev"}
+select(state_df_with_abbrev, -state)
+
+```
+The only difference is the order in which the columns appear.
+
+### Selecting rows from a data frame
+
+Often we want to select particular rows from a data frame, based on the data that they contain.  We can do this using the `filter()` function.  For example, let's say that we want to filter our data frame to only include states with populations greater than 10 million:
+
+```{r filter_pop, exercise=TRUE, exercise.setup="setup-abbrev"}
+filter(state_df_with_abbrev, population>10000000)
+```
+
+We could also select rows based on specific values.  Let's say that we wanted to extract the rows for Alaska and California.  We could do that as follows:
+
+```{r filter_in, exercise=TRUE, exercise.setup="setup-abbrev"}
+filter(state_df_with_abbrev, state_abbrev %in% c('CA', 'AK'))
+```
+
+The `%in%` operator tests whether each value of the variable is a member of the vector that follows it; in this case, it is TRUE for any values that are included in the vector `c('CA', 'TX')`:
+
+```{r in_example, exercise=TRUE, exercise.setup="setup-abbrev"}
+state_df_with_abbrev$state_abbrev %in% c('CA', 'AK')
+```
+
+These four truth values refer to the four rows in the data frame, which the `filter()` function uses to only include rows where the value is true.  Note that since we didn't assign the output values for the previous few cells to a new variable, those results didn't get saved -- rather they were just printed to the screen.
+
+#### Exercise
+
+First, add a new column called *area_sq_miles* to the *state_df_with_abbrev* data frame that contains each state's total area (in square miles):
+
+- Alaska: 665,384
+- California: 163,694
+- Hawaii: 10,931
+- Texas: 268,596
+
+Be sure to add the values in the same order that they appear in the data frame! Save the result to a new data frame called *state_df_with_area*.  
+
+```{r df_exercise, exercise=TRUE, exercise.setup="setup-abbrev"}
+state_df_with_area <- ...
+```
+
+```{r df_exercise-solution}
+state_df_with_area <- mutate(state_df_with_abbrev,
+                             area_sq_miles=c(665384, 10931, 163694, 268596))
+```
+
+```{r df_exercise-check}
+grade_code(incorrect='Try again...')
+```
+
+
+Now create a new variable in this data frame called *population_per_sq_mile* that contains the population per square mile, obtained by dividing the population variable by the area_sq_miles variable.  Store the resulting data frame to a new variable called *state_df_with_psm*.
+
+```{r psm_setup, exercise.setup="setup-abbrev"}
+state_df_with_area <- mutate(state_df_with_abbrev,
+                             area_sq_miles=c(665384, 10931, 163694, 268596))
+```
+
+```{r psm_exercise, exercise=TRUE, exercise.setup="psm_setup"}
+state_df_with_psm <- ...
+```
+
+```{r psm_exercise-solution}
+state_df_with_psm <- mutate(state_df_with_area,
+                             population_per_sq_mile=population/area_sq_miles)
+```
+
+```{r psm_exercise-check}
+grade_code(incorrect='Try again...')
+```
