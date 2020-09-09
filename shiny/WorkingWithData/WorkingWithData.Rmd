@@ -1,0 +1,245 @@
+---
+title: "Loading, wrangling, and visualizing data"
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(gradethis)
+library(tidyverse)
+library(ggplot2)
+knitr::opts_chunk$set(echo = FALSE)
+tutorial_options(exercise.eval = FALSE)
+knitr::opts_chunk$set(exercise.checker = gradethis::grade_learnr)
+```
+
+## Loading and cleaning data
+
+### Loading a text file
+
+It is common to save data to a text file, and in order to analyze such a data set we need to be able to load the file into R.  Let's start by looking at a common type of file for saving a data frame, known as a *comma-separate values* (or *CSV*) file. In such a file, each row in the data frame is on a separate row in the file, and each of the columns is separated by a common (hence the name).  Let's start by loading a text file from the internet (since you can't load a file from your computer into this tutorial).  This file can be found at [https://raw.githubusercontent.com/poldrack/learnr_demos/master/data/surveydata.csv](https://raw.githubusercontent.com/poldrack/learnr_demos/master/data/surveydata.csv), and it contains real data from a student survey taken by students in Stats 60/Psych 10 at Stanford in 2020. 
+
+To load the dataset, we can use the `read_csv()` function that is part of the Tidyverse, and then have a peek into its contents using the `glimpse()` function that you encountered in the data frames tutorial:
+
+```{r load_from_url, exercise=TRUE, message=FALSE, warning=FALSE}
+
+survey_data <- read_csv('https://raw.githubusercontent.com/poldrack/learnr_demos/master/data/surveydata.csv')
+glimpse(survey_data)
+
+```
+
+There are six different variables measured across 161 individuals:
+
+- *year*: the student's year in college
+- *stats_before*: whether they have taken a statistics class before
+- *expect_like*: How much they expect to like the course, on a scale from 1 ("I expect to hate it intensely.") to 7 ("I expect it to be my favorite course ever.")
+- *programming experience*: computer programming experience, on a scale from 1 ("I have never programmed a computer") to 7 ("I am an expert programmer.")
+- *statatt_atf*: Overall score on a survey about attitudes towards the field of statistics in general, where a higher score represents a more positive attitude
+- *statatt_atc*: Overall score on a survey about attitudes towards this particular statistics course, where a higher score represents a more positive attitude
+
+## Wrangling data
+
+```{r survey-setup, echo=FALSE, message=FALSE}
+survey_data <- read_csv('https://raw.githubusercontent.com/poldrack/learnr_demos/master/data/surveydata.csv')
+survey_data_by_year = group_by(survey_data, year)
+survey_data_by_year_filtered <- filter(survey_data_by_year,
+                                       year %in% c('1', '2', '3', '4'))
+survey_data_by_year_filtered_dropna <- drop_na(survey_data_by_year_filtered)
+
+```
+
+An important part of analyzing data is being able to transform the data into a format that one can actually analyze; this is often referred to as *data wrangling*.  Let's say that we would like to create a table that will show the average of each of the variables across the different years.  To do this, we need to use the *year* variable to separate the values and compute the mean separately for each year. If you look at the *year* variable, you will see that it is actually defined as a character variable (denoted by "<chr>" in the glimpse output).  This is because some of the values that students entered on the form were not proper numeric values.  We can see this by using the `unique()` function, which lists all of the unique values within a variable:
+
+```{r unique_example, exercise=TRUE, exercise.setup='survey-setup'}
+unique(survey_data$year)
+```
+
+Here we see that there were two values that are not numeric: "5+" and "Graduate student".  First, let's see how many people made each response.  To do this, we will introduce another Tidyverse function called `summarize()`.  This function takes a data frame and computes a summary across its rows.  In order to create a summary of the number of indviduals making each response, we need to first group the data by the variable of interest (*year* in this case), which we can do using the `group_by()` function.  If we then pass the grouped data to the summarize function, it will perform the summary separately for each different value of the variable.  To compute the number of observation in each of the categories, we can use the `n()` function, which simply counts the number of observatations.
+
+```{r summarize_example, message=FALSE, exercise=TRUE, exercise.setup='survey-setup'}
+# first group the data by year
+survey_data_by_year = group_by(survey_data, year)
+
+# then compute the number in each year category using n()
+summarize(survey_data_by_year,
+          n=n())
+```
+
+This shows that there are relatively few observations in the "5+" and "Graduate student" categories, so we probably don't want to compute statistics for those groups since they will be unreliable.
+
+#### Exercise
+
+Use the `filter()` function that you learned about in the previous tutorial to filter the survey_data_by_year data frame to only include years 1-4.  Remember that these are character strings, so you have to include quotation marks around them.  Save the result to a new variable called *survey_data_by_year_filtered*.
+
+
+```{r filter_exercise, exercise=TRUE, exercise.setup='survey-setup'}
+
+survey_data_by_year_filtered <-...
+
+```
+
+```{r filter_exercise-solution}
+survey_data_by_year_filtered <- filter(survey_data_by_year,
+                                       year %in% c('1', '2', '3', '4'))
+```
+
+```{r filter_exercise-check}
+grade_code(incorrect='Try again...')
+```
+
+### Summarizing means across groups
+
+Now that we have the data filtered and grouped, we can compute the mean value for each group on each variable.  Once again we can use the `summarize()` function, but in this case we need to tell it to summarize across several variables.  We can do that using the `across()` function, telling it which variables to summarize across.
+
+
+```{r across_example, exercise=TRUE, message=FALSE, exercise.setup='survey-setup'}
+summarize(survey_data_by_year_filtered,
+          across(.fns=mean))
+```
+We see that this worked for some of the variable, but for several value of the statistical attitudes variables the result is *NA*. This occurs because some of the students had missing values for one of those questionnaires, and the `mean()` function in R by default will return *NA* if any of the input values are *NA*. One way to solve this is to simply drop any student who has a missing value for any of the variables, so that we only work with complete datasets.  We can do this using the `drop_na()` function:
+
+```{r dropna_example, exercise=TRUE, message=FALSE, exercise.setup='survey-setup'}
+survey_data_by_year_filtered_dropna <- drop_na(survey_data_by_year_filtered)
+
+# now use the cleaned up data to compute the means
+summarize(survey_data_by_year_filtered_dropna,
+          across(.fns=mean))
+```
+Now we have numeric values for all years and all variables.
+
+## Visualizing data
+
+Looking at numbers in a table is not necessarily the best way to understand what is going on in the data -- usually, we would like to visualize the data in order to make any patterns more easily visible.  
+
+### Plotting a histogram
+
+Let's start by visualizing the data from the *expect_like* variable, which denotes how much each student expects to like the course.  First let's look at the overall distribution using a histogram.  We will use the `ggplot()` function.  ggplot separates graphics into several different components:
+
+- *data*: What data frame are we using for the plot?
+- *aesthetics*: What variables are we using, and how are we using them?
+- *geometry*: What kind of graphical representation do we want?
+- *themes*: What is the overall style of the graphic?
+
+Let's generate the plot and then look at what the different parts of the command do:
+
+```{r plot_expect_like, exercise=TRUE, exercise.setup='survey-setup'}
+
+ggplot(survey_data_by_year_filtered_dropna,
+       aes(expect_like)) + 
+  geom_histogram(binwidth=.5) + 
+  xlab('Expected liking') + 
+  theme_minimal()
+```
+
+The `ggplot()` command first specifies the name of the data frame being used to create the plot, and then specifies the aesthetics within the `aes()` function.  In this case, the aesthetics are simple because we are only working with a single variable.  The `geom_histogram()` function specifies the geometry, in this case a histogram; it also specifies a bin width of 0.5 which makes the histogram look nice.  The `xlab()` command adds a label to the X axis of the histogram; to see what happens if we don't include this, remove that line and rerun the command above.  Finally, the `theme_minimal()` command sets the theme of the plot, which specifies the overall look and feel.  To see a different theme, try replacing `theme_minimal()` with `theme_gray()`.  
+
+We can also change the geometry if we want a different type of plot.  For example, we can plot a *density plot* which uses a line to show the density of each value:
+
+```{r plot_expect_like_density, exercise=TRUE, exercise.setup='survey-setup'}
+
+ggplot(survey_data_by_year_filtered_dropna,
+       aes(expect_like)) + 
+  geom_density() + 
+  xlab('Expected liking') + 
+  theme_minimal()
+```
+
+Now let's say that we would like to plot the density separately for each of the years in the dataset.  To do this, we can add a color command to the `aes()` function, which tells ggplot to plot the density in different colors for each value of the varible that is specified in the color command --- in this case, *year*.
+
+```{r plot_expect_like_density_year, exercise=TRUE, exercise.setup='survey-setup'}
+
+ggplot(survey_data_by_year_filtered_dropna,
+       aes(expect_like, color=year)) + 
+  geom_density() + 
+  xlab('Expected liking') + 
+  theme_minimal()
+```
+
+```{r density-mc, echo=FALSE}
+question("Which of the following are appropriate interpretations of this figure? Choose all that apply.",
+  answer("Year 1 and Year 4 responses are very similar to one another"),
+  answer("Year 1 students expect to hate the class more than the other years", correct=TRUE),
+  answer("Year 2-4 students all respond in a fairly similar way", correct = TRUE),
+  answer("Year 1 students expect to love the class much more than the other years")
+)
+```
+
+### Plotting a box plot
+
+Another useful way to plot data across groups would be to use a *box plot*.  To to this, we just replace the geometry with `geom_boxplot()`.  In addition, for the aesthetics, we would use a grouping variable (i.e. "group=year") rather than a color variable ("color=year") as we did above.
+
+#### Exercise
+
+Complete the code in this box tenerate a box plot for the variable *statatt_atf* which represents the students' attitudes towards the field of statistics.  Whereever there are underscores ("___") you should fill them in with the appropriate commands.
+
+```{r boxplot_exercise, message=FALSE, exercise=TRUE, exercise.setup='survey-setup'}
+
+ggplot(survey_data_by_year_filtered_dropna,
+       aes(y=______, group=______)) + 
+  _______() + 
+  xlab('Year') + 
+  ylab('Attitude towards field of statistics') + 
+  ylim(1,7) + 
+  theme_minimal()
+```
+
+```{r boxplot_exercise-solution}
+ggplot(survey_data_by_year_filtered_dropna,
+       aes(y=statatt_atf, group=year)) + 
+  geom_boxplot() + 
+  xlab('Year') + 
+  ylab('Attitude towards field of statistics') + 
+  ylim(1,7) + 
+  theme_minimal()
+```
+
+```{r boxplot_exercise-check}
+grade_code(incorrect='Try again...')
+```
+
+```{r ylim-mc, echo=FALSE}
+question("What does the ylim() command in the graph do?  Try changing the values in that command to see what happens.",
+  answer("It changes which years are presented"),
+  answer("It changes the minimum and maximum values of the Y variable", correct=TRUE),
+  answer("It changes the label of the Y variable"),
+  answer("It highlights particular values on the Y axis")
+)
+```
+
+
+### Plotting two variables against each other
+
+So far we have focused on plotting the distribution of a single variable. Now, let's look at how to plot the values of two variables against one another.  The most common way to do this is a *scatterplot*, which shows each observation as a single point.
+
+Let's try plotting the two attitude towards statistics variables (*statatt_atc* and *statatt_atf*) against one another, with *statatt_atf* on the X axis and *statatt_atc* on the Y axis.  To do this, we need to do two things:
+
+- specify the x and y variables in the aesthestics
+- specify the `geom_point()` geometry
+
+```{r scatter_statatt, exercise=TRUE, exercise.setup='survey-setup'}
+
+ggplot(survey_data_by_year_filtered_dropna,
+       aes(x=statatt_atf, y=statatt_atc)) + 
+  geom_point() + 
+  xlab('Attitude towards field of statistics') + 
+  ylab('Attitude towards this course') + 
+  theme_minimal()
+```
+
+Here we see that those two variables seem to move together, though not perfectly.  
+
+We can also add additional information by changing different features of the data points. For example, let's say that we also want to include information about how much the student expects to like the course.  We could do that by changing the size of the data points according to each student's response on that question.  While we are at it, let's also set the color according to whether the student has had a staistics course before or not.
+
+```{r scatter_statatt_size, exercise=TRUE, exercise.setup='survey-setup'}
+
+ggplot(survey_data_by_year_filtered_dropna,
+       aes(x=statatt_atf, y=statatt_atc, size=expect_like)) + 
+  geom_point() + 
+  xlab('Attitude towards field of statistics') + 
+  ylab('Attitude towards this course') + 
+  theme_minimal()
+```
+
+This shows us that, unsurprisingly, people who expect to like the course have more positive attitudes towards statistics in general as well as towards this particular course.  
+
