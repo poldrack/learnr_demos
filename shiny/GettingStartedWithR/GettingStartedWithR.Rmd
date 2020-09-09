@@ -133,11 +133,11 @@ Enter the code to test whether today's temperature in Celsius is above freezing 
 
 ```
 
-```{r todays-temp-above-freezing-solution, exercise.setup = "setup-temp"}
+```{r todays-temp-above-freezing-solution}
 todays_temperature_C > 0
 ```
 
-```{r todays-temp-above-freezing-check, exercise.setup = "setup-temp"}
+```{r todays-temp-above-freezing-check}
 grade_code(incorrect='Try again...')
 ```
 
