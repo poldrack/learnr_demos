@@ -1,0 +1,304 @@
+---
+title: "Central Tendency and Variability"
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(gradethis)
+library(tidyverse)
+library(assertthat)
+knitr::opts_chunk$set(echo = FALSE)
+tutorial_options(exercise.eval = FALSE)
+knitr::opts_chunk$set(exercise.checker = gradethis::grade_learnr)
+```
+
+## Central Tendency
+
+### The Mean
+
+Remember that the mean is computed by summing all of the data points and dividing them by the number of data points:
+
+$$
+\bar{X} = \frac{\sum^N_1 x_i}{N}
+$$
+Let's create a vector with a few numbers and compute its mean:
+
+```{r mean_setup, echo=FALSE}
+my_numbers <- c(3, 9, 5,12, 8)
+
+```
+
+```{r mean_by_hand, exercise=TRUE}
+
+my_numbers <- c(3, 9, 5,12, 8)
+my_mean <- sum(my_numbers) / length(my_numbers)
+my_mean
+```
+
+Let's compare that to the output of the built-in `mean()` function to make sure it gives the same answer:
+
+```{r mean_by_fn, exercise=TRUE, exercise.setup='mean_setup'}
+mean(my_numbers)
+```
+
+#### Exercise
+
+```{r survey-setup, echo=FALSE, message=FALSE}
+load_cleaned_survey_data <- function(){
+  survey_data <- read_csv('https://raw.githubusercontent.com/poldrack/learnr_demos/master/data/surveydata.csv')
+  survey_data_filtered <- filter(survey_data,
+                                         year %in% c('1', '2', '3', '4'))
+  survey_data_filtered_dropna <- drop_na(survey_data_filtered)
+}
+
+survey_data <- load_cleaned_survey_data()
+survey_data_by_year <- group_by(survey_data, year)
+mean_prog_by_year <- summarize(survey_data_by_year,
+                               mean_programming_experience=mean(programming_experience))
+
+```
+
+Now let's use the survey data from the previous tutorial to compute the mean of the variable *programming_experience* which rates the level of previous computer programming experience of each student.  We will use a cleaned-up version of the survey data, which we can obtain using a special function that we have created called `load_cleaned_survey_data()`.  This performs all of the cleaning operations that we performed in the previous tutorial.
+
+```{r load_from_url, message=FALSE, warning=FALSE, exercise=TRUE, exercise.setup='survey-setup'}
+
+survey_data <- load_cleaned_survey_data()
+glimpse(survey_data)
+
+```
+
+First, compute the mean of the *programming_experience* variable by hand, and store it to a variable called *mean_programming_experience*.
+
+```{r mean_progexp_exercise, exercise=TRUE, exercise.setup='survey-setup'}
+
+```
+
+```{r mean_progexp_exercise-solution}
+mean_programming_experience <- mean(survey_data$programming_experience)
+```
+
+```{r mean_progexp_exercise-check}
+grade_code(incorrect='Try again...')
+```
+
+### Computing the mean by group
+
+Now let's use the commands you learned in the previous tutorial to compute the mean programming experience separately for each different year of students, storing the result to a new variable called *mean_prog_by_year*.  First we need to group the T*survey_data* data frame by year, then we apply the `summarize()` function.  In this case, we just want to compute the mean of the *programming_experience* variable, rather than all of the variables as we did in the previous tutorial.
+
+```{r meanbyyear, exercise=TRUE, message=FALSE, exercise.setup='survey-setup'}
+survey_data_by_year <- group_by(survey_data, year)
+mean_prog_by_year <- summarize(survey_data_by_year,
+                               mean_programming_experience=mean(programming_experience))
+mean_prog_by_year
+```
+
+#### Exercise
+
+Create a bar plot using the data frame that was generated in the previous cell.  You should plot *mean_programming_experience* as the Y variable using *year* as the X variable.  For the geometry, you should use `geom_col()` -- this tells ggplot to simply plot the values directly from the data frame.
+
+```{r plot_mean_prog_exercise, exercise=TRUE, exercise.setup='survey-setup'}
+
+```
+
+```{r plot_mean_prog_exercise-solution}
+ggplot(mean_prog_by_year, aes(x=year,
+                              y=mean_programming_experience)) +
+  geom_col()
+
+```
+
+```{r plot_mean_prog_exercise-check}
+grade_code(incorrect='Try again...')
+```
+
+### The median
+
+The median is the data point that falls in the middle after the data are ordered (sorted) by their value.  Let's see how we could compute the median by hand.  Let's reuse the data that we used in the earlier example for the mean, and then use the `sort()` function to sort them:
+
+```{r median_setup, echo=FALSE}
+my_numbers <- c(3, 9, 5,12, 8)
+sorted_numbers <- sort(my_numbers)
+```
+
+```{r median_byhand, exercise=TRUE}
+my_numbers <- c(3, 9, 5,12, 8)
+sorted_numbers <- sort(my_numbers)
+sorted_numbers
+```
+To find the median, we can simply take the value in the middle if there is an odd number of values; if the number of values were even, then we would instead take the average of the two numbers in the middle.  How can we find the middle value?  Below there are several possible alternatives - try to figure out which one properly identifies the number in the middle (8).
+
+```{r median_sandbox, exercise=TRUE, exercise.setup='median_setup'}
+sorted_numbers[length(sorted_numbers)/2]
+```
+
+```{r median_question}
+question("Which of these correctly identifies the middle value (8) from the vector?",
+  answer("sorted_numbers[length(sorted_numbers)/2]"),
+  answer("sorted_numbers[length(sorted_numbers)/2 + 1]", correct=TRUE),
+  answer("sorted_numbers[length(sorted_numbers)/2 - 1]")
+)
+
+```
+
+```{r median_question2}
+question("Why did that work? Use the cell above to test possible answers if needed.",
+  answer("When length(sorted_numbers)/2 is used as an index, it gets rounded down to 2.", correct=TRUE),
+  answer("length(sorted_numbers) returns the actual length minus one (4)."),
+  answer("When a number is used as an index for a vector, one is automatically subtracted from the number")
+)
+
+```
+
+### Comparing the mean and median
+
+The median is less sensitive to outliers than the mean.  Let's see an example of this.  We will create 
+
+```{r powerlaw_setup}
+
+simulate_long_tail <- function(xmin=0.1, xmax=1000, 
+                               alpha=2.5, size=1000, 
+                               seed=12345){
+  set.seed(seed)
+  y=runif(1000)
+  df = data.frame(z = xmin/(1-y)^(1/alpha) * xmax)
+  return(df)
+}
+
+longtail_data = simulate_long_tail()
+
+longtail_summary <- summarize(longtail_data,
+                              mean_z=mean(z),
+                              median_z=median(z))
+
+```
+
+```{r make_powerlaw_data, exercise=TRUE, exercise.setup='powerlaw_setup'}
+longtail_data = simulate_long_tail()
+ggplot(longtail_data, aes(z)) +
+  geom_histogram(bins=50)
+```
+
+
+```{r median_mean_question}
+question("For this dataset, which value do you expect to be larger?",
+  answer("mean.", correct=TRUE),
+  answer("median"),
+  answer("I expect them to be exactly the same")
+)
+
+```
+
+#### Exercise
+
+First, compute the mean and median of the *z* variable from the *longtail_data* data frame, using the built-in `mean()` and `median()` functions along with the `summarize()` function.  This should create a new data frame called *longtail_summary* that contains variables called *mean_z* and *median_z*.
+
+```{r compute_summary, exercise=TRUE, exercise.setup='powerlaw_setup'}
+
+longtail_summary <- ...
+
+longtail_summary
+
+```
+
+```{r compute_summary-solution}
+longtail_summary <- summarize(longtail_data,
+                              mean_z=mean(z),
+                              median_z=median(z))
+```
+
+```{r compute_summary-check}
+grade_code(incorrect='Try again...')
+```
+
+Now let's recreate the plot above, but add two vertical lines: a blue line showing the location of the median, and a red line showing the location of the mean.  You will need to know how to pull the mean and median values out of the *longtail_summary* data frame, which you can do using the `pull()` function:
+
+```{r pull_example, exercise=TRUE, exercise.setup='powerlaw_setup'}
+pull(longtail_summary, median_z)
+```
+
+You also need to know how to create vertical lines, which you can do using the `geom_vline()` function. You have to specify the location of the line using the *xintercept* argument, and the color using the *color* argument.
+
+```{r plot_summary, exercise=TRUE, exercise.setup='powerlaw_setup' }
+ggplot(longtail_data, aes(z)) +
+  geom_histogram(bins=50) + 
+  ...
+```
+
+```{r plot_summary-solution}
+ggplot(longtail_data, aes(z)) +
+  geom_histogram(bins=50) +
+  geom_vline(xintercept=pull(longtail_summary, median_z), color='blue') + 
+  geom_vline(xintercept=pull(longtail_summary, mean_z), color='red')
+```
+
+```{r plot_summary-check}
+grade_code(incorrect='Try again...')
+```
+
+## Variability
+
+Now we turn to looking at how our data are dispersed, which we often refer to as *variability*.  
+
+First, let's create two simple datasets:
+
+```{r var_setup}
+
+A <- c(1, 2, 2, 1)
+B <- c(0, 3, 3, 0)
+var_A <- sum((A - mean(A))**2)/(length(A)- 1)
+var_B <- sum((B - mean(B))**2)/(length(B)- 1)
+
+```
+
+```{r var_exercise, exercise=TRUE}
+
+A <- c(1, 2, 2, 1)
+B <- c(0, 3, 3, 0)
+```
+
+```{r var_question}
+question("Which of these do you expect to have a higher variance?",
+  answer("A"),
+  answer("B", correct=TRUE),
+  answer("I expect them to be exactly the same")
+)
+```
+
+
+Let's compute the variance of each by hand.  Remember that the variance of a sample is computed as:
+
+$$
+\hat{\sigma^2} = \frac{\sum^N_1 (x_i - \bar{x})^2}{N - 1}
+$$
+Let's compute this for our variables. For each one we:
+
+- create a vector of deviations for each value from the mean
+- square those values and add them up
+- divide the sum by N-1
+
+```{r var_by_hand, exercise=TRUE, exercise.setup='var_setup'}
+var_A <- sum((A - mean(A))**2)/(length(A)- 1)
+print(var_A)
+var_B <- sum((B - mean(B))**2)/(length(B)- 1)
+print(var_B)
+```
+
+
+Let's make sure that these are the same as the values obtained from the built-in `var()` function:
+
+```{r check_vars, exercise=TRUE, exercise.setup='var_setup'}
+assert_that(var_A == var(A))
+assert_that(var_B == var(B))
+```
+
+```{r std_question}
+question("Which of the following would be the correct code to compute the standard deviation of A?",
+  answer("sqrt(sum((A - mean(A))**2)/(length(A)- 1))", correct=TRUE),
+  answer("sqrt(sum((A - mean(A))**2))/(length(A)- 1)"),
+  answer("sum(sqrt(sum((A - mean(A))**2))/(length(A)- 1))"),
+  answer("sum(sqrt(sum((A - mean(A))**2)))/(length(A)- 1)")
+)
+```
+
