@@ -97,6 +97,7 @@ Now that we have the data filtered and grouped, we can compute the mean value fo
 summarize(survey_data_by_year_filtered,
           across(.fns=mean))
 ```
+
 We see that this worked for some of the variable, but for several value of the statistical attitudes variables the result is *NA*. This occurs because some of the students had missing values for one of those questionnaires, and the `mean()` function in R by default will return *NA* if any of the input values are *NA*. One way to solve this is to simply drop any student who has a missing value for any of the variables, so that we only work with complete datasets.  We can do this using the `drop_na()` function:
 
 ```{r dropna_example, exercise=TRUE, message=FALSE, exercise.setup='survey-setup'}
@@ -106,6 +107,7 @@ survey_data_by_year_filtered_dropna <- drop_na(survey_data_by_year_filtered)
 summarize(survey_data_by_year_filtered_dropna,
           across(.fns=mean))
 ```
+
 Now we have numeric values for all years and all variables.
 
 ## Visualizing data
