@@ -1,0 +1,278 @@
+---
+title: "Sampling"
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(gradethis)
+library(tidyverse)
+library(ggplot2)
+library(NHANES)
+knitr::opts_chunk$set(echo = FALSE)
+tutorial_options(exercise.eval = FALSE)
+knitr::opts_chunk$set(exercise.checker = gradethis::grade_learnr)
+```
+
+## Sampling error
+
+```{r NHANES_setup, echo=FALSE}
+sd_population <- function(x){
+  return(sd(x)*sqrt((length(x)-1)/length(x)))
+}
+NHANES_adult <- NHANES %>% 
+  filter(Age > 17) %>%
+  distinct(ID, .keep_all = TRUE)  %>%
+  drop_na(Height)
+
+
+NHANES_summary <- summarize(NHANES_adult,
+                            mean_height=mean(Height),
+                            sd_height=sd_population(Height))
+
+if (file.exists('sampling_cache.RData')){
+  load('sampling_cache.RData')
+} else {
+  nsamples <- 1000 
+  sample_size <- 200
+  
+  # create a data frame to save the results
+  sample_estimates <- data.frame(height=array(dim=nsamples))
+  
+  # set the random seed so that we get the same results each time
+  set.seed(12345)
+  
+  # loop through and create samples and then compute the mean
+  
+  for (testrun in seq(1, nsamples)){
+    nhanes_sample <- slice_sample(NHANES_adult, n=sample_size)
+    sample_estimates$height[testrun] <- mean(nhanes_sample$Height)
+  }
+  save(nsamples, sample_size, sample_estimates, file='sampling_cache.RData')
+}
+```
+
+Whenever we compute a statistic based on a sample from a population, there will be some degree of error due to the particular individuals that were sampled.  Let's see this in action by taking five samples from the NHANES dataset and computing the mean height of the individuals. 
+
+### For loops and if-then statements
+
+To do this we will use a *for loop*, which allows us to repeatedly loop through a set of functions.  Here is a simple example, in which we will loop through values from 1 to 5 and print the value each time through the loop.  To create the list of values, we use the `seq()` function, which creates a sequence of numbers from a starting point to an ending point:
+
+```{r colon, exercise=TRUE}
+
+seq(1, 5)
+
+```
+
+
+The for loop iterates through each value and performs all of the operations within the loop using the value.  For example, we can set a variable called *index* based on the values in the sequence, and then print the value within each iteration of the loop:
+
+```{r forloop, exercise=TRUE}
+
+values <- seq(1, 5)
+
+for (index in values){
+  print(index)
+}
+```
+
+Note that we use squiggly brackets to denote the beginning and end of the loop.
+
+Another important control structure in R is the *if-then statement*.  This performs a test, and then executes some commands if the test is true.  For example, we could loop through ouf values, and only print the ones that are odd numbers. We can test whether a number is odd by computing the remainder of that number when dividing by 2, which we can do using the `%%` operator:
+
+```{r ifthen, exercise=TRUE}
+values <- seq(1, 5)
+
+for (index in values){
+  if ( index %% 2){
+    print(index)
+  }
+}
+```
+
+
+#### Exercise
+
+First, create a dataframe called *simpsons* that has a variable called *name* containing the following names:
+
+Homer, Marge, Lisa, Bart, Maggie
+
+and a variable called *age* containing their ages:
+
+39, 36, 8, 10, 1
+
+```{r namesvec, exercise=TRUE}
+
+```
+
+```{r namesvec-solution}
+simpsons <- data.frame(name=c("Homer", "Marge", "Lisa", "Bart", "Maggie"),
+                       age=c(39, 36, 8, 10, 1))
+```
+
+```{r namesvec-check}
+grade_code(incorrect='Try again...')
+```
+
+Then, create a for loop that loops through an index from one to the number of rows in the data frame (which you can obtain using `nrows()`), use an if-then statement to test whether the individual is below the age of 18, and prints their name if they are. 
+
+```{r names-setup, echo=FALSE}
+simpsons <- data.frame(name=c("Homer", "Marge", "Lisa", "Bart", "Maggie"),
+                       age=c(39, 36, 8, 10, 1))
+
+```
+
+```{r namesvec_loop, exercise=TRUE, exercise.setup='names-setup'}
+
+
+```
+
+```{r namesvec_loop-solution}
+
+values <- seq(1, nrow(simpsons))
+
+for (index in values){
+  if (simpsons$age[index] < 18){
+    print(simpsons$name[index])
+  }
+}
+
+```
+
+```{r namesvec_loop-check}
+grade_code(incorrect='Try again...')
+```
+
+
+### Repeatedly sampling using a for loop
+
+We will use the NHANES dataset as an example, since it is large enough that we can treat it as its own population.  Let's say that we want to estimate the average height of adults in the dataset, using a sample of 200 people.  First, let's compute the mean and standard deviation of height for the entire NHANES population (using the *NHANES_adult data frame that we have already set up for you).  Note that the `sd()` function in R assumes that we want to compute the sample standard deviation (using $N - 1$ as the denominator) rather than the population standard deviation (using $N$ as the denominator), so we will use a custom function that computes the population standard deviation, called `sd_population()`:
+
+```{r summarize_height, exercise=TRUE, exercise.setup='NHANES_setup'}
+NHANES_summary <- summarize(NHANES_adult,
+                            mean_height=mean(Height),
+                            sd_height=sd_population(Height))
+NHANES_summary
+
+```
+
+Now, let's create a for loop that repeatedly samples 200 individuals from the dataset, computes the mean height within the sample, and stores it to a new variable.  We will take 1000 samples to make sure that we have stable results.  The function `slice_sample()` take a data frame and returns a random selection of rows from the data frame.
+
+```{r sample_loop, exercise=TRUE, exercise.setup='NHANES_setup'}
+nsamples <- 1000 
+sample_size <- 200
+
+# create a data frame to save the results
+sample_estimates <- data.frame(height=array(dim=nsamples))
+
+# set the random seed so that we get the same results each time
+set.seed(12345)
+
+# loop through and create samples and then compute the mean
+
+for (testrun in seq(1, nsamples)){
+  nhanes_sample <- slice_sample(NHANES_adult, n=sample_size)
+  sample_estimates$height[testrun] <- mean(nhanes_sample$Height)
+}
+
+```
+
+#### Exercise
+
+Plot a histogram containing the sample estimates of mean height, and place a blue line at the population mean, by filling in the missing code sections with the appropriate commands.
+
+```{r plot_sampdist, exercise=TRUE, exercise.setup='NHANES_setup'}
+
+ggplot(..., aes(...)) + 
+  geom_histogram(bins=50) + 
+  geom_vline(xintercept = ..., color='blue')
+
+```
+```{r plot_sampdist-solution}
+
+ggplot(sample_estimates, aes(height)) + 
+  geom_histogram(bins=50) + 
+  geom_vline(xintercept = pull(NHANES_summary, mean_height), color='blue')
+
+```
+
+```{r plot_sampdist-check}
+grade_code(incorrect='Try again...')
+```
+
+Now let's compute the standard deviation of the sample estimates:
+
+```{r sampling_sd, exercise=TRUE, exercise.setup='NHANES_setup'}
+
+sampling_error_sd <- sd(sample_estimates$height)
+sampling_error_sd
+
+```
+
+Remember that this is equivalent to the *standard error of the mean*, which is the standard deviation of the sampling distribution.  Remember that the formula for computing this (if you know the population standard deviation) is:
+
+$$
+SEM = \frac{\sigma}{\sqrt{N}}
+$$
+
+Let's confirm that our estimate comes close to this value computed from the NHANES population standard deviation:
+
+```{r pop_sem, exercise=TRUE, exercise.setup='NHANES_setup'}
+
+SEM <- pull(NHANES_summary, sd_height)/sqrt(sample_size)
+SEM
+
+```
+
+In this case you can see that the theoretical value is fairly close to the value that we found when we repeatedly sampled the data.
+
+## Central limit theorem
+
+The central limit theorem tells us that the distribution of sample means becomes increasingly normal as the sample size gets larger.  Let's look at this by sampling data from a uniform distribution, which has equal likelihood for all values between zero and one.  First, let's sample from a uniform distribution and plot the values. We can obtain random samples from a uniform distribution using the `runif()` function.
+
+
+```{r uniformsamp, exercise=TRUE}
+sample_size <- 100000
+uniform_samples <- data.frame(samples=runif(sample_size))
+ggplot(uniform_samples, aes(samples)) + 
+  geom_histogram(binwidth=.01)
+```
+
+This is clearly not a normal distribution! Now let's repeatedly compute the mean of samples from a uniform distribution, and see what their distribution looks like.  Let's start with a small sample size of 10.  To make it easier to compare the observed sampling distribution with a normal distribution, we will plot the distribution as a density using `geom_density()`, and then plot a normal distribution on top of that (in blue).
+
+```{r unif_samplemeans, exercise=TRUE}
+
+sample_size <- 10
+n_sampling_runs <- 1000
+sampling_data <- data.frame(mean=array(dim=n_sampling_runs))
+
+for (index in seq(1, n_sampling_runs)){
+  sampling_data$mean[index] = mean(runif(sample_size))
+}
+
+ggplot(sampling_data, aes(mean)) + 
+  geom_density() + 
+  stat_function(
+    fun = dnorm,
+    args = list(
+      mean = mean(sampling_data$mean),
+      sd = sd(sampling_data$mean)
+    ), 
+    color = "blue",
+  ) 
+
+```
+
+Here we can see that even for a relatively small sample size, the sampling distribution looks almost exactly like a normal distribution, thanks to the Central Limit Theorem!
+
+```{r clt-mc, echo=FALSE}
+question("Why is the Central Limit Theorem so important in statsitics? Choose all that apply.",
+  answer("It lets us take advantage of statistical techniques that assume a normal distribution", correct=TRUE),
+  answer("It explains why normal distributions are so common in the real world", correct=TRUE),
+  answer("It lets us use very small samples for our studies"),
+  answer("It explains why we use N-1 as the denominator for the standard deviation"),
+  random_answer_order = TRUE
+)
+```
+
