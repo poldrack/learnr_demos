@@ -13,6 +13,12 @@ library(NHANES)
 knitr::opts_chunk$set(echo = FALSE)
 tutorial_options(exercise.eval = FALSE)
 knitr::opts_chunk$set(exercise.checker = gradethis::grade_learnr)
+
+if (Sys.getenv('SHINY_DATADIR') != ""){
+  datadir = Sys.getenv('SHINY_DATADIR')
+} else {
+  datadir = './'
+}
 ```
 
 ## Sampling error
@@ -30,9 +36,9 @@ NHANES_adult <- NHANES %>%
 NHANES_summary <- summarize(NHANES_adult,
                             mean_height=mean(Height),
                             sd_height=sd_population(Height))
-
-if (file.exists('sampling_cache.RData')){
-  load('sampling_cache.RData')
+cachefile = paste(datadir, 'sampling_cache.RData', sep='/')
+if (file.exists(cachefile)){
+  load(cachefile)
 } else {
   nsamples <- 1000 
   sample_size <- 200
@@ -49,7 +55,7 @@ if (file.exists('sampling_cache.RData')){
     nhanes_sample <- slice_sample(NHANES_adult, n=sample_size)
     sample_estimates$height[testrun] <- mean(nhanes_sample$Height)
   }
-  save(nsamples, sample_size, sample_estimates, file='sampling_cache.RData')
+  save(nsamples, sample_size, sample_estimates, file=cachefile)
 }
 ```
 
