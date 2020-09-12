@@ -135,9 +135,10 @@ sorted_numbers[length(sorted_numbers)/2]
 
 ```{r median_question}
 question("Which of these correctly identifies the middle value (8) from the vector?",
-  answer("sorted_numbers[length(sorted_numbers)/2]"),
-  answer("sorted_numbers[length(sorted_numbers)/2 + 1]", correct=TRUE),
-  answer("sorted_numbers[length(sorted_numbers)/2 - 1]")
+  answer("sorted_numbers[length(sorted_numbers) / 2]"),
+  answer("sorted_numbers[length(sorted_numbers) / 2 + 1]", correct=TRUE),
+  answer("sorted_numbers[length(sorted_numbers) / 2 - 1]"),
+  random_answer_order = TRUE
 )
 
 ```
@@ -146,7 +147,8 @@ question("Which of these correctly identifies the middle value (8) from the vect
 question("Why did that work? Use the cell above to test possible answers if needed.",
   answer("When length(sorted_numbers)/2 is used as an index, it gets rounded down to 2.", correct=TRUE),
   answer("length(sorted_numbers) returns the actual length minus one (4)."),
-  answer("When a number is used as an index for a vector, one is automatically subtracted from the number")
+  answer("When a number is used as an index for a vector, one is automatically subtracted from the number"),
+  random_answer_order = TRUE
 )
 
 ```
@@ -185,7 +187,8 @@ ggplot(longtail_data, aes(z)) +
 question("For this dataset, which value do you expect to be larger?",
   answer("mean.", correct=TRUE),
   answer("median"),
-  answer("I expect them to be exactly the same")
+  answer("I expect them to be exactly the same"),
+  random_answer_order = TRUE
 )
 
 ```
@@ -262,7 +265,8 @@ B <- c(0, 3, 3, 0)
 question("Which of these do you expect to have a higher variance?",
   answer("A"),
   answer("B", correct=TRUE),
-  answer("I expect them to be exactly the same")
+  answer("I expect them to be exactly the same"),
+  random_answer_order = TRUE
 )
 ```
 
@@ -295,10 +299,51 @@ assert_that(var_B == var(B))
 
 ```{r std_question}
 question("Which of the following would be the correct code to compute the standard deviation of A?",
-  answer("sqrt(sum((A - mean(A))**2)/(length(A)- 1))", correct=TRUE),
-  answer("sqrt(sum((A - mean(A))**2))/(length(A)- 1)"),
-  answer("sum(sqrt(sum((A - mean(A))**2))/(length(A)- 1))"),
-  answer("sum(sqrt(sum((A - mean(A))**2)))/(length(A)- 1)")
+  answer("sqrt(sum((A - mean(A))**2) / (length(A) - 1))", correct=TRUE),
+  answer("sqrt(sum((A - mean(A))**2)) / (length(A) - 1)"),
+  answer("sum(sqrt(sum((A - mean(A))**2)) / (length(A) - 1))"),
+  answer("sum(sqrt(sum((A - mean(A))**2))) / (length(A) - 1)"),
+  random_answer_order = TRUE
 )
+```
+
+## Z-scores
+
+Remember that Z-scores are values that have been converted to a mean of zero and a standard deviation of one.  Let's covert our *my_numbers* vector from earlier into a set of Z-scores.  First, take a look at the mean and standard deviation of those values:
+
+```{r zscore, exercise=TRUE, exercise.setup='mean_setup'}
+
+print(my_numbers)
+print(mean(my_numbers))
+print(sd(my_numbers))
+```
+
+```{r zscore_question}
+question("Which of the following is the correct way to convert these to Z-scores?",
+  answer("(my_numbers - mean(my_numbers)) / sd(my_numbers)", correct=TRUE),
+  answer("(my_numbers / sd(my_numbers)) - mean(my_numbers)"),
+  answer("(my_numbers / mean(my_numbers)) - sd(my_numbers)"),
+  random_answer_order = TRUE
+)
+```
+
+#### Exercise
+
+Enter the correct code to compute the Z-scores into the equation, to create a new variable called *my_zscores*.  Then, convert these scores to standardized scores with a mean of 100 and a standard deviation of 10, saving them to a new variable called *my_std_scores*.
+
+```{r zscore_exercise, exercise=TRUE, exercise.setup='mean_setup'}
+
+my_zscores <- ...
+my_std_scores <- ...
+```
+
+```{r zscore_exercise-solution}
+my_zscores <- (my_numbers - mean(my_numbers)) / sd(my_numbers)
+my_std_scores <- my_zscores * 10 + 100
+
+```
+
+```{r zscore_exercise-check}
+grade_code(incorrect='Try again...')
 ```
 
