@@ -27,6 +27,7 @@ load_flight_data <- function(){
     sfo_june_flights <- sfo_june_flights %>%
     mutate(flight_time = ifelse(morning_flight, "morning", "evening"),
            arrival_delay_mins = ARRIVAL_DELAY) %>%
+    filter(DESTINATION_AIRPORT=='ORD') %>%
     select(YEAR, MONTH, DAY, AIRLINE, ORIGIN_AIRPORT, DESTINATION_AIRPORT,
            scheduled_departure_time, flight_time, arrival_delay_mins)
   return(sfo_june_flights)
@@ -37,6 +38,7 @@ flight_data <- load_flight_data()
 flight_data_by_time <- group_by(flight_data, flight_time)
 flight_data_norm = mutate(flight_data,
                                 delay_norm=bestNormalize(arrival_delay_mins)$x.t)
+ttest_result <- t.test(delay_norm ~ flight_time, data=flight_data_norm)
 
 flight_data_norm_by_time <- group_by(flight_data_norm, flight_time)
 
@@ -52,18 +54,31 @@ flight_data <- load_flight_data()
 glimpse(flight_data)
 ```
 
+You can see from the glimpse that we have limited the data to flights from SFO to ORD (Chicago O'Hare).  We do this because otherwise we might have biases due to the fact that there are more flights in the morning versus the evening to different cities; if those different cities are more or less likely to have delays, then this could cause our results to be biased.
+
 #### Exercise
 
 Let's start by computing the mean and median of the *ARRIVAL_DELAY* variable, separated by whether it was a morning flight or not (which is stored in the *morning_flight* variable). Let's also compute the number of observations in each group.  Use the `summarize()` function to do this:
 
 ```{r summarize_delay,message=FALSE, exercise=TRUE}
 
+```
+```{r summarize_delay-solution,message=FALSE, exercise=TRUE}
+
 flight_data_by_time <- group_by(flight_data, flight_time)
 
 summarize(flight_data_by_time,
+          n=n(),
           mean_delay=mean(arrival_delay_mins),
           median_delay=median(arrival_delay_mins))
 ```
+
+```{r summarize_delay-check}
+grade_code(incorrect='Try again...')
+```
+
+
+### Checking our data
 
 Something seems a bit odd here - the median delay for both sets of flights is negative (that is, the median flight actually gets in *early*), but the means are quite different, with the mean delay for evening flights being especially long.  Whenever we see that the mean is behaving differently from the median, it's good to check and make sure that the data are not badly distributed.  Let's plot the distribution of delays separately for morning and evening flights:
 
@@ -107,6 +122,73 @@ Apply the `t.test()` function to test whether the *delay_norm* variable differs 
 
 ```{r normed_ttest-solution}
 
-t.test(delay_norm ~ flight_time, data=flight_data_norm)
+ttest_result <- t.test(delay_norm ~ flight_time, data=flight_data_norm)
+ttest_result
+```
+```{r normed_ttest-check}
+grade_code(incorrect='Try again...')
+```
+
+
+```{r sig-mc, echo=FALSE}
+question("Is the difference between the means for these two conditions statistically significant.",
+  answer("No", correct=TRUE),
+  answer("Yes")
+)
+```
+
+## Hypothesis testing using randomization
+
+In the previous section we saw how we can use the standard t-test to perform a hypothesis test between two groups. Now let's look at using randomization to test our hypothesis.  Because randomization doesn't require the assumption of a normal distribution, we don't need to worry about transforming the data.
+
+To do this, we need to repeatedly resample our data in order to obtain a *null distribution* - that is, the distribution that we would expect if there was no true effect.  We can estimate this by randomly shuffling the labels on our data.  We are going to repeatedly loop through and do the following:
+
+- randomly shuffle our labels for morning versus evening flights
+- compute the t-statistic for the data with the shuffled labels
+- store the statistic
+
+Once we have done this many times, then we can compare our observed t-statistic to the null distribution, in order to see how likely the observed value would have been under the null hypothesis.
+
+```{r randomize, exercise=TRUE}
+
+num_resamples <- 1000
+set.seed(12345) # set the random seed so we get consistent results
+resample_results <- data.frame(t=array(dim=num_resamples))
+
+# make a copy of the original data so that we don't ruin it when we shuffle
+flight_data_null <- flight_data_norm
+
+for (resample_run in seq(1, num_resamples)){
+  flight_data_null$flight_time <- sample(flight_data_null$flight_time)
+  ttest_result_null <- t.test(delay_norm ~ flight_time, data=flight_data_null)
+  resample_results$t[resample_run] <- ttest_result_null$statistic
+}
+```
+
+
+Now we find the p-value by determining what proportion of the values in the null distribution are more extreme *in either direction* compared to our observed statistic.  To do this, let's first add a variable to the *resample_results* data frame called *exceeds* that contains a test for whether the absolute value of the t statsitic in each resampling run is greater than or equal to the observed t statistic for the actual data. 
+
+```{r exceed, exercise=TRUE, exercise.setup='randomize'}
+
+resample_results <- mutate(resample_results,
+                           exceeds = abs(t) >= abs(ttest_result$statistic))
+
+```
+
+#### Exercise
+
+Compute the probability of exceedence -- that is, the probability that the *exceed* variable that we just created contains the value TRUE. You may remember from the probability tutorial that there is a trick that you learned to do this easily.
+
+
+```{r randp, exercise=TRUE, exercise.setup='exceed'}
+
+```
+
+```{r randp-solution}
+mean(resample_results$exceeds)
+```
+
+```{r randp-check}
+grade_code(incorrect='Try again...')
 ```
 
