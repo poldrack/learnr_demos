@@ -19,11 +19,7 @@ if (Sys.getenv('SHINY_DATADIR') != ""){
 } else {
   datadir = './'
 }
-```
 
-## Sampling error
-
-```{r NHANES_setup, echo=FALSE}
 sd_population <- function(x){
   return(sd(x)*sqrt((length(x)-1)/length(x)))
 }
@@ -36,28 +32,26 @@ NHANES_adult <- NHANES %>%
 NHANES_summary <- summarize(NHANES_adult,
                             mean_height=mean(Height),
                             sd_height=sd_population(Height))
-cachefile = paste(datadir, 'sampling_cache.RData', sep='/')
-if (file.exists(cachefile)){
-  load(cachefile)
-} else {
-  nsamples <- 1000 
-  sample_size <- 200
-  
-  # create a data frame to save the results
-  sample_estimates <- data.frame(height=array(dim=nsamples))
-  
-  # set the random seed so that we get the same results each time
-  set.seed(12345)
-  
-  # loop through and create samples and then compute the mean
-  
-  for (testrun in seq(1, nsamples)){
-    nhanes_sample <- slice_sample(NHANES_adult, n=sample_size)
-    sample_estimates$height[testrun] <- mean(nhanes_sample$Height)
-  }
-  save(nsamples, sample_size, sample_estimates, file=cachefile)
+
+nsamples <- 1000 
+sample_size <- 200
+
+# create a data frame to save the results
+sample_estimates <- data.frame(height=array(dim=nsamples))
+
+# set the random seed so that we get the same results each time
+set.seed(12345)
+
+# loop through and create samples and then compute the mean
+
+for (testrun in seq(1, nsamples)){
+  nhanes_sample <- slice_sample(NHANES_adult, n=sample_size)
+  sample_estimates$height[testrun] <- mean(nhanes_sample$Height)
 }
+
 ```
+
+## Sampling error
 
 Whenever we compute a statistic based on a sample from a population, there will be some degree of error due to the particular individuals that were sampled.  Let's see this in action by taking five samples from the NHANES dataset and computing the mean height of the individuals. 
 
@@ -155,7 +149,7 @@ grade_code(incorrect='Try again...')
 
 We will use the NHANES dataset as an example, since it is large enough that we can treat it as its own population.  Let's say that we want to estimate the average height of adults in the dataset, using a sample of 200 people.  First, let's compute the mean and standard deviation of height for the entire NHANES population (using the *NHANES_adult data frame that we have already set up for you).  Note that the `sd()` function in R assumes that we want to compute the sample standard deviation (using $N - 1$ as the denominator) rather than the population standard deviation (using $N$ as the denominator), so we will use a custom function that computes the population standard deviation, called `sd_population()`:
 
-```{r summarize_height, exercise=TRUE, exercise.setup='NHANES_setup'}
+```{r summarize_height, exercise=TRUE}
 NHANES_summary <- summarize(NHANES_adult,
                             mean_height=mean(Height),
                             sd_height=sd_population(Height))
@@ -165,7 +159,7 @@ NHANES_summary
 
 Now, let's create a for loop that repeatedly samples 200 individuals from the dataset, computes the mean height within the sample, and stores it to a new variable.  We will take 1000 samples to make sure that we have stable results.  The function `slice_sample()` take a data frame and returns a random selection of rows from the data frame.
 
-```{r sample_loop, exercise=TRUE, exercise.setup='NHANES_setup'}
+```{r sample_loop, exercise=TRUE}
 nsamples <- 1000 
 sample_size <- 200
 
@@ -188,7 +182,7 @@ for (testrun in seq(1, nsamples)){
 
 Plot a histogram containing the sample estimates of mean height, and place a blue line at the population mean, by filling in the missing code sections with the appropriate commands.
 
-```{r plot_sampdist, exercise=TRUE, exercise.setup='NHANES_setup'}
+```{r plot_sampdist, exercise=TRUE}
 
 ggplot(..., aes(...)) + 
   geom_histogram(bins=50) + 
@@ -209,7 +203,7 @@ grade_code(incorrect='Try again...')
 
 Now let's compute the standard deviation of the sample estimates:
 
-```{r sampling_sd, exercise=TRUE, exercise.setup='NHANES_setup'}
+```{r sampling_sd, exercise=TRUE}
 
 sampling_error_sd <- sd(sample_estimates$height)
 sampling_error_sd
@@ -224,7 +218,7 @@ $$
 
 Let's confirm that our estimate comes close to this value computed from the NHANES population standard deviation:
 
-```{r pop_sem, exercise=TRUE, exercise.setup='NHANES_setup'}
+```{r pop_sem, exercise=TRUE}
 
 SEM <- pull(NHANES_summary, sd_height)/sqrt(sample_size)
 SEM
