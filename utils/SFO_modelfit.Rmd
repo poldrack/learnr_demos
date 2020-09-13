@@ -1,0 +1,39 @@
+---
+title: "SFO model fit"
+output: html_notebook
+---
+
+Load data
+
+```{r}
+library(tidyverse)
+
+waitdata <- read_csv('https://raw.githubusercontent.com/statsthinking21/statsthinking21-core/master/data/04/sfo_wait_times_2017.csv')
+```
+
+```{r}
+ggplot(waitdata, aes(waittime)) + geom_histogram(bins=50)
+```
+
+```{r}
+library(MASS)
+fit.gamma <- fitdistr(waitdata$waittime+0.01,"gamma")
+fit.gamma
+```
+
+
+
+
+```{r}
+ggplot(waitdata, aes(waittime)) +
+  geom_density() +
+    stat_function(
+    fun = dgamma,
+    args = list(
+      shape=fit.gamma$estimate[1],
+      rate=fit.gamma$estimate[2]), 
+    color = "blue")
+
+
+```
+

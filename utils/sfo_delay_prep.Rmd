@@ -1,0 +1,46 @@
+---
+title: "Airline data prep"
+output: html_notebook
+---
+
+Prepare the flight delay data from Kaggle (https://www.kaggle.com/usdot/flight-delays?select=flights.csv)
+
+```{r}
+library(tidyverse)
+flightdata = read_csv('/Users/poldrack/Downloads/810_1496_bundle_archive/flights.csv')
+
+```
+
+```{r}
+sfo_june_flights <- flightdata %>% 
+  filter(MONTH==6) %>% 
+  filter(ORIGIN_AIRPORT=="SFO") %>%
+  mutate(scheduled_departure_time=as.numeric(SCHEDULED_DEPARTURE),
+         morning_flight = (scheduled_departure_time >= 600 & scheduled_departure_time <= 1000),
+         evening_flight = (scheduled_departure_time >= 1600 & scheduled_departure_time <= 2000),
+         ) %>%
+  filter(evening_flight==1 | morning_flight==1) %>%
+  drop_na(ARRIVAL_DELAY)
+
+print(getwd())
+save(sfo_june_flights, file='../data/sfo_june_flights.RData')
+
+sfo_june_flights %>%
+  group_by(evening_flight) %>%
+  summarize(
+    n = n(),
+    mean_delay = mean(ARRIVAL_DELAY),
+    median_delay = median(ARRIVAL_DELAY)
+
+  )
+
+ggplot(sfo_june_flights, aes(ARRIVAL_DELAY, color=evening_flight)) + 
+  geom_density()
+
+```
+
+
+```{r}
+t.test(ARRIVAL_DELAY ~ evening_flight, data=sfo_june_flights)
+```
+
