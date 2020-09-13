@@ -1,0 +1,112 @@
+---
+title: "HypothesisTesting"
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(gradethis)
+library(tidyverse)
+library(ggplot2)
+library(NHANES)
+library(bestNormalize)
+knitr::opts_chunk$set(echo = FALSE)
+tutorial_options(exercise.eval = FALSE)
+knitr::opts_chunk$set(exercise.checker = gradethis::grade_learnr)
+
+if (Sys.getenv('SHINY_DATADIR') != ""){
+  datadir = Sys.getenv('SHINY_DATADIR')
+} else {
+  datadir = '../../data'
+}
+
+
+load_flight_data <- function(){
+    load(url('https://github.com/poldrack/learnr_demos/blob/master/data/sfo_june_flights.RData?raw=true'))
+    sfo_june_flights <- sfo_june_flights %>%
+    mutate(flight_time = ifelse(morning_flight, "morning", "evening"),
+           arrival_delay_mins = ARRIVAL_DELAY) %>%
+    select(YEAR, MONTH, DAY, AIRLINE, ORIGIN_AIRPORT, DESTINATION_AIRPORT,
+           scheduled_departure_time, flight_time, arrival_delay_mins)
+  return(sfo_june_flights)
+}
+
+
+flight_data <- load_flight_data()
+flight_data_by_time <- group_by(flight_data, flight_time)
+flight_data_norm = mutate(flight_data,
+                                delay_norm=bestNormalize(arrival_delay_mins)$x.t)
+
+flight_data_norm_by_time <- group_by(flight_data_norm, flight_time)
+
+```
+
+## Hypothesis testing
+
+Here we will work through an example of testing a hypothesis.  We will use a [publicly available dataset](https://www.kaggle.com/usdot/flight-delays?select=flights.csv) on airline flight delays (from 2015) to test whether flights in the afternoon are more likely to be delayed than those in the morning.   We can load these data using a special function called `get_flight_data()`:
+
+```{r loadflightdata, exercise=TRUE}
+
+flight_data <- load_flight_data()
+glimpse(flight_data)
+```
+
+#### Exercise
+
+Let's start by computing the mean and median of the *ARRIVAL_DELAY* variable, separated by whether it was a morning flight or not (which is stored in the *morning_flight* variable). Let's also compute the number of observations in each group.  Use the `summarize()` function to do this:
+
+```{r summarize_delay,message=FALSE, exercise=TRUE}
+
+flight_data_by_time <- group_by(flight_data, flight_time)
+
+summarize(flight_data_by_time,
+          mean_delay=mean(arrival_delay_mins),
+          median_delay=median(arrival_delay_mins))
+```
+
+Something seems a bit odd here - the median delay for both sets of flights is negative (that is, the median flight actually gets in *early*), but the means are quite different, with the mean delay for evening flights being especially long.  Whenever we see that the mean is behaving differently from the median, it's good to check and make sure that the data are not badly distributed.  Let's plot the distribution of delays separately for morning and evening flights:
+
+
+```{r delayplot, exercise=TRUE}
+ggplot(flight_data, aes(arrival_delay_mins, color=flight_time)) +
+  geom_density()
+```
+
+This shows us that the distribution of delays has a very long right tail, which is why the mean is so large for the evening flights.  When we see this, it's often common to *transform* the data, so that they are distributed more normally.  We will use the `bestNormalize()` function in R, which finds the transformation that best normalizes the data.
+
+```{r norm, message=FALSE, exercise=TRUE}
+
+flight_data_norm = mutate(flight_data,
+                                delay_norm=bestNormalize(arrival_delay_mins)$x.t)
+
+flight_data_norm_by_time <- group_by(flight_data_norm, flight_time)
+
+summarize(flight_data_norm_by_time,
+          mean_delay=mean(delay_norm),
+          median_delay=median(delay_norm))
+```
+
+Now let's plot the normalized data:
+
+```{r delayplot_norm, exercise=TRUE}
+ggplot(flight_data_norm, aes(delay_norm, color=flight_time)) +
+  geom_density()
+```
+
+Now we can see that the data are much more normally distributed, and it still appears that the evening flights seem to be a bit more delayed than the morning flights.
+
+
+#### Exercise
+
+Apply the `t.test()` function to test whether the *delay_norm* variable differs as a function of the *flight_time* variable.
+
+```{r normed_ttest, exercise=TRUE}
+
+```
+
+```{r normed_ttest-solution}
+
+t.test(delay_norm ~ flight_time, data=flight_data_norm)
+```
+
