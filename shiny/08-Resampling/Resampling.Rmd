@@ -1,0 +1,220 @@
+---
+title: "Resampling and Simulation"
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(gradethis)
+library(tidyverse)
+library(ggplot2)
+library(NHANES)
+knitr::opts_chunk$set(echo = FALSE)
+tutorial_options(exercise.eval = FALSE)
+knitr::opts_chunk$set(exercise.checker = gradethis::grade_learnr)
+
+# cache data on shiny server to reduce computational load
+if (Sys.getenv('SHINY_DATADIR') != ""){
+  datadir = Sys.getenv('SHINY_DATADIR')
+} else {
+  datadir = './'
+}
+```
+
+## Generating random numbers
+
+```{r resampling_setup, echo=FALSE}
+sd_population <- function(x){
+  return(sd(x)*sqrt((length(x)-1)/length(x)))
+}
+NHANES_adult <- NHANES %>% 
+  filter(Age > 17) %>%
+  distinct(ID, .keep_all = TRUE)  %>%
+  drop_na(Height)
+
+
+NHANES_summary <- summarize(NHANES_adult,
+                            mean_height=mean(Height),
+                            sd_height=sd_population(Height))
+cachefile = paste(datadir, 'resampling_cache.RData', sep='/')
+if (file.exists(cachefile)){
+  load(cachefile)
+} else {
+  nsamples <- 1000 
+  sample_size <- 200
+  
+  # create a data frame to save the results
+  sample_estimates <- data.frame(height=array(dim=nsamples))
+  
+  # set the random seed so that we get the same results each time
+  set.seed(12345)
+  
+  # loop through and create samples and then compute the mean
+  
+  for (testrun in seq(1, nsamples)){
+    nhanes_sample <- slice_sample(NHANES_adult, n=sample_size)
+    sample_estimates$height[testrun] <- mean(nhanes_sample$Height)
+  }
+  save(nsamples, sample_size, sample_estimates, file=cachefile)
+}
+```
+
+The ability to simulate using a computer requires us to be able to generate random numbers -- or, as you learned in the book, *pseudo-random* numbers.  R has a set of functions that allow us to generate random numbers from many different distributions.  Let's start with a simple distribution: The uniform distribution, which contains all real numbers between zero and one with equal probability.  The function to generate a random number from a uniform distribution in R is called `runif()`.  This function requires a single argument, which specifies how many numbers will be generated. 
+
+#### Exercise
+
+First, generate a single random sample from a uniform distribution:
+
+```{r runif, exercise=TRUE}
+
+
+```
+
+```{r runif-solution}
+runif(1)
+```
+
+```{r runif-check}
+grade_code(incorrect='Try again...')
+```
+
+Now let's say that we want to obtain 4 random numbers that vary between 2 and 4. How would you obtain those?
+
+```{r runif2, exercise=TRUE}
+
+
+```
+
+```{r runif2-solution}
+runif(4) * 2 + 2
+```
+
+```{r runif2-check}
+grade_code(incorrect='Try again...')
+```
+
+### Distributions with parameters
+
+Some distributions have *parameters* that define the specific shape of the distribution. You have already seen two examples of this: The binomial distribution has a *probability* parameter, and the normal distribution has *mean* and *standard deviation* parameters.  Let's see how to generate random samples from those distributions. First, let's generate a sample from a binomial distribution, which is done using the `rbinom()` function.  (As you may have noticed, all of the functions for generating random numbers in R start with "r" followed by an abbrevation of the distribution name.)  The `rbinom()` function takes three arguments:
+
+- *n*: the number of observations
+- *size*: the number of trials per observation
+- *prob*: the probability of success
+
+So, for example, if we wanted to simulate the number of heads out of 10 coin flips (where the probability is 0.5), and we wanted to do this 5 times, we would use:
+
+```{r rbinom, exercise=TRUE}
+
+rbinom(5, 10, 0.5)
+
+```
+
+Similarly, the function `rnorm()` to generate random samples from a normal distribution takes three parameters:
+
+- *n*: the number of values to be generated
+- *mean*: the mean of the distribution (which defaults to zero)
+- *sd*: the standard deviation of the distribution (which defaults to one)
+
+So, to generate five values with a mean of 100 and a standard deviation of ten we would use:
+
+```{r rnorm, exercise=TRUE}
+
+rnorm(5, 100, 10)
+```
+
+
+#### Exercise
+
+Generate 1000 samples from a normal distribution with a mean of 100 and a standard deviation of 10, and plot a histogram of the samples.  Because ggplot requires a data frame as its input, you will first generate a new data frame called *sample_df* that contains a variable called *norm* that contains the samples.  Use a bin width of 1 for the histogram.
+
+```{r normhist, exercise=TRUE}
+sample_df <- data.frame(...)
+ggplot(...) + 
+  ...
+```
+
+```{r normhist-solution}
+sample_df <- data.frame(norm=rnorm(1000, 100, 10))
+ggplot(sample_df, aes(norm)) + 
+  geom_histogram(binwidth=1)
+ 
+```
+
+```{r normhist-check}
+grade_code(incorrect='Try again...')
+```
+
+## Simulation
+
+We often use simulation to understand processes that are too complex to model using pure mathematics. Let's say that you want to know how early you need to show up at the airport so that you can be sure to get to your gate in time for your flight.  First we need to know the distribution of waiting times so that we can simulate them. Let's say that we know that waiting times at the airport are generally distributed according to a *gamma* distribution, but that one out of every 500 passengers gets pulled aside for additional screening, which takes an additional 5 minutes.  Given this, how long should one give for screening so that they can be 99% confident of getting to their gate on time?  Estimating this mathematically would be difficult, so let's do it using simulation.
+
+First, let's create a function that can generate values from our distribution.  You will not need to learn how to create your own functions, but here is an example if you are interested.  
+
+```{r seed-setup, echo=FALSE}
+set.seed(12345)
+```
+
+```{r waittime-setup, echo=FALSE}
+set.seed(12345)
+
+rwaittime <- function(n, p_added_screening=1/500, added_screening_time=5){
+  gamma_wait <- rgamma(n, 3.75, 0.28)
+  added_wait <- added_screening_time * (runif(n) < p_added_screening)
+  return(gamma_wait + added_wait)
+}
+
+num_passengers <- 5000
+waittimes <- data.frame(wait=rwaittime(num_passengers))
+
+# plot the histogram of random wait times
+ggplot(waittimes, aes(wait)) +
+  geom_histogram(bins=100)
+
+```
+
+
+```{r waittime, exercise=TRUE, message=FALSE, exercise.setup='seed-setup'}
+
+rwaittime <- function(n, p_added_screening=1/500, added_screening_time=5){
+  gamma_wait <- rgamma(n, 3.75, 0.28)
+  added_wait <- added_screening_time * (runif(n) < p_added_screening)
+  return(gamma_wait + added_wait)
+}
+
+num_passengers <- 5000
+waittimes <- data.frame(wait=rwaittime(num_passengers))
+
+# plot the histogram of random wait times
+ggplot(waittimes, aes(wait)) +
+  geom_histogram(bins=100)
+
+```
+
+Now we need to figure out what the wait time is for which 99% of passengers will fall below.  We do this by finding the 99th percentile of the values from our simulation -- that is, the value below which 99% of our observed values fall.  We can obtain this using the `quantile()` function:
+
+```{r safetime, exercise=TRUE, exercise.setup='waittime-setup'}
+safe_time <- quantile(waittimes$wait, .99)
+safe_time
+```
+
+#### Exercise
+
+Let's say that you are willing to be a bit more risky, and will settle for 90% confidence that you can make it to your gate on time.  Change the function in the previous cell to obtain this value, storing it to a new variable called *risky_time*.
+
+```{r riskytime, exercise=TRUE, exercise.setup='waittime-setup'}
+risky_time <- ...
+risky_time
+
+```
+
+```{r riskytime-solution}
+risky_time <- quantile(waittimes$wait, .9)
+risky_time
+
+```
+
+```{r riskytime-check}
+grade_code(incorrect='Try again...')
+```
+
