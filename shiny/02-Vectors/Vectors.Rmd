@@ -73,7 +73,7 @@ seq(6, 0, -1)
 
 #### Exercise
 
-Enter the code to generate values starting at five times pi and ending at zero, in steps of pi divided by 2:
+Enter the code to generate values starting at five times pi and ending at zero, in steps of negative pi divided by 2.  Pi is a *built-in constant* in R, which means that you can specify the value of negative pi by simply typing `-pi`.
 
 ```{r seq_exercise, exercise=TRUE}
 
@@ -90,7 +90,7 @@ grade_code(incorrect='Try again...')
 
 ## Accessing the elements of a vector
 
-We often want to access a single element within a vector.  For example, let's say that we have a vector containing an individual's first, middle, and last name:
+We often want to access a single element within a vector.  For example, let's say that we have a vector containing an individual's first, middle, and last name.  Remember that we use the `<-` operator to assign a value to a new variable:
 
 ```{r setup-names, include=FALSE}
 names_vector <- c('Russell', 'Allan', 'Poldrack')
@@ -143,15 +143,17 @@ names_vector[c(1, 3)]
 
 We can also use a sequence to extract a set of values.  Let's say that we wanted to get my name, leaving out the degree:
 
-This means you can retrieve ranges of values. Get the second through fourth words:
+This means you can retrieve ranges of values. Get the first through third words:
 
 ```{r getnames, exercise=TRUE, exercise.setup='names-fixed2'}
 names_vector[1:3]
 ```
 
+The colon operator in `1:3` tells R to generate a sequence of integers from 1 to 3; this is equivalent to using `seq(1,3)`.
+
 #### Exercise
 
-First, create a vector variable called ``first_five_letters`` that contains the first five letters in the alphabet in lower case:
+First, create a vector variable called `first_five_letters` that contains the first five letters in the alphabet in lower case:
 
 ```{r first_five_letters, exercise=TRUE}
 
@@ -165,7 +167,7 @@ first_five_letters <- c('a', 'b', 'c', 'd', 'e')
 grade_code()
 ```
 
-Now, using a vector index to extract just the vowels ('a' and 'e') and store them to a new variable called ``vowels_only``:
+Now, using a vector index to extract just the vowels ('a' and 'e') from the `first_five_letters` vector and store them to a new variable called `vowels_only`:
 
 ```{r vowels_only, exercise=TRUE, exercise.setup='first_five_letters-solution'}
 
@@ -183,13 +185,13 @@ grade_code()
 
 You can perform most mathematical operations on vectors just as you would on a variable containing a single value.  
 
-Let's say that we were to measure the high temperature in Palo Alto for five consecutive days, and store it to a variable called ``daily_temperature``:
+Let's say that we were to measure the high temperature in Palo Alto for five consecutive days, and store it to a variable called `daily_temperature`:
 
 ```{r dailytemp, exercise=TRUE}
 daily_temperature <- c(78, 76, 77, 74, 73)
 ```
 
-Now let's say that we discover a problem with our thermometer, such that it is consistently two degrees higher than the true temperature. Thus, in order to fix our measurements, we need to subtract two from each entry. We can do this by simply subtracting two fromm the vector:
+Now let's say that we discover a problem with our thermometer, such that it is consistently two degrees higher than the true temperature. Thus, in order to fix our measurements, we need to subtract two from each entry. We can do this by simply subtracting two from the vector:
 
 ```{r dailytemp-setup}
 daily_temperature <- c(78, 76, 77, 74, 73)
@@ -214,13 +216,48 @@ $$
 We can simply apply that math to our vector:
 
 ```{r convert_temp, exercise=TRUE, exercise.setup='dailytemp-setup'}
-daily_temperature_C <- (daily_temperature_fixed - 32) / (5 / 9)
+daily_temperature_C <- (daily_temperature_fixed - 32) * (5 / 9)
 daily_temperature_C
+```
+
+We can also perform mathematical operations on multiple vectors. When we perform math on vectors, the result is applied on each element separately.
+
+```{r vectormath, exercise=TRUE}
+
+numerator <- c(1, 2, 3)
+denominator <-c (2, 4, 6)
+numerator / denominator
+```
+
+Here we see that the result is the same length as the vectors that were divided, and that it was obtained by separately performing the operation on each pair of matching elements.
+
+
+#### Exercise
+
+First, create a vector called `my_numbers` containing the values *1, 3, 5, and 9*.  Then create a new vector called `my_squared_numbers` that contains the squared values, obtained using the exponent operator `**2` (which means *raised to the power of 2*).
+
+```{r squarevec, exercise=TRUE}
+my_numbers <- ...
+my_squared_numbers <- ...
+
+my_squared_numbers
+```
+
+```{r squarevec-solution}
+my_numbers <- c(1, 3, 5, 9)
+my_squared_numbers <- my_numbers**2
+
+my_squared_numbers
+
+```
+
+```{r squarevec-check}
+grade_code()
 ```
 
 ## Comparing vectors
 
-We often want to perform a test on each element of a vector.  For example, let's say that we want to know whether the temperature each day is above 72 (which we refer to in Palo Alto as "hot").  We can simply apply our test to the vector, and get back a vector of logical values as the result.
+We often want to perform a test on each element of a vector.  For example, let's say that we want to know whether the temperature each day is above 72 (which we refer to in Palo Alto as "hot"), using the `daily_temperature_fixed` vector that we defined on the previous page.  We can simply apply our test to the vector, and get back a vector of logical values as the result.
 
 ```{r test72, exercise=TRUE, exercise.setup='dailytemp-setup'}
 temp_over_72 <- daily_temperature_fixed > 72
@@ -265,14 +302,14 @@ mean(daily_temperature_missing)
 Since one of the values is NA, the mean function doesn't know what to do with it so it returns an NA value.  Many functions have a built-in way to deal with missing values.  Take a look at the help for the ``mean()`` function:
 
 ```{r meanhelp, exercise=TRUE}
-
+help(mean)
 ```
 
-You will see that one of its arguments is ``na.rm`` which tells it to ignore all NA values.
+You will see that one of its arguments is ``na.rm``. Its default value is *FALSE*, in which case it will not remove NA values. If we want to remove NA values, we need to explicitly set it to TRUE. 
 
 #### Exercise
 
-Compute the mean of ``daily_temperature_missing``, setting the na.rm argument to true:
+Compute the mean of ``daily_temperature_missing``, setting the na.rm argument to TRUE:
 
 
 ```{r mean_narm, exercise=TRUE, exercise.setup='dailytemp-setup'}
@@ -287,4 +324,36 @@ mean(daily_temperature_missing, na.rm=TRUE)
 grade_code()
 ```
 
+## Creating empty vectors
 
+Sometimes it can be useful to create an empty vector, as you will see in the later tutorial on data frames.  To do this, we can use the `array()` function, which takes an argument `dim` that specifies the length of the vector.  
+
+```{r emptyvec, exercise=TRUE}
+array(dim=4)
+```
+
+As you can see, by default the `array()` function fills the vector with NA values. If we want to fill it with a particular value, we can specify this using the `data` argument. For example, we can fill it with zeros:
+
+```{r zerovec, exercise=TRUE}
+array(data=0, dim=4)
+```
+
+#### Exercise
+
+First, create a vector called `my_values` that is 8 items long and contains the value 10 in each position.  Then create a second vector called `my_series` by multiplying `my_values` by a sequence from one to 8.
+
+```{r vectormul, exercise=TRUE}
+my_values <- ...
+my_series <- ...
+my_series
+```
+
+```{r vectormul-solution}
+my_values <- array(dim=8, data=10)
+my_series <- my_values * seq(1, 8)
+my_series
+```
+
+```{r vectormul-check}
+grade_code()
+```
