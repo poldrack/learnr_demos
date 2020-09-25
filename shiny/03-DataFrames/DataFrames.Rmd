@@ -15,7 +15,7 @@ knitr::opts_chunk$set(exercise.checker = gradethis::grade_learnr)
 
 ## Data Frames
 
-A data frame is a way of packaging together a number of variables that reflect the same observations, very similar to the spreadsheets that you have probably encountered before.  Each column in the table reflects a single variable, and each row reflects a single observation across those variables.  For example, let's combine the data on state populations from the previous exercise into a single data frame; we will also add the data for California and Texas.  We will use a function called `tibble()` to create a fancy form of a data frame known as a *tibble*.  This function is part of a set of functions known as the *Tidyverse*, which you will learn more about as we go along.  
+A data frame is a way of packaging together a number of variables that reflect the same observations, very similar to the spreadsheets that you have probably encountered before.  Each column in the table reflects a single variable, and each row reflects a single observation across those variables.  For example, let's combine the data on state populations (which you encountered in the previous exercise on vectors) into a single data frame; we will also add the data for California and Texas.  We will use a function called `tibble()` to create a fancy form of a data frame known as a *tibble*.  This function is part of a set of functions known as the *Tidyverse*, which you will learn more about as we go along.  
 
 ```{r stateDF, exercise=TRUE}
 state_df <- tibble(state=c( 'Alaska', 'Hawaii', 'California', 'Texas'),
@@ -43,10 +43,15 @@ This tell us the number of rows and columns in the data frame, and also shows us
 
 ### Selecting columns (variables) by name
 
-There are two different ways to select a column (that is, one of the variables).  First we, can select it by name, using the `$` operator.  For example, to select the state variable, we would enter `state_df$state`:
+There are two different ways to select a column (that is, one of the variables).  In order to select the observations of a variable called `variable_name` from a data frame called `data_frame`, you would apply the `$` operator to the data frame variable like so:
+
+`data_frame$variable_name`
+
+For example, to select the state variable, we would enter `state_df$state`:
 
 ```{r show_state, exercise=TRUE, exercise.setup="setup-states"}
-state_df$state
+state_vector <- state_df$state
+state_vector
 ```
 
 This returns a vector that contains the values from that column.  
@@ -70,7 +75,8 @@ grade_code(incorrect='Try again...')
 Note that when we refer to the variable by name using the `$` operator, the output is a vector. What if we wanted to create a new data frame containing just our variable of interest?  To do this, we can use the `select()` function.  The first argument to the `select()` function is the name of the data frame, and the second is the name of the variable (or variables) that we would like to select:
 
 ```{r select_population, exercise=TRUE, exercise.setup="setup-states"}
-select(state_df, population)
+population_df <- select(state_df, population)
+population_df
 ```
 
 The output from this function is a new data frame with a single column for the population variable.
@@ -81,22 +87,22 @@ The output from this function is a new data frame with a single column for the p
 Often we would like to add a new column to an existing data frame.  In this case, let's add a column with the state abbreviations for each state.  To do this, we can use the `mutate()` function.  This function takes the name of the original data frame as its first argument, and then allows you to specify the definition of any new variables you'd like to add.  In this case, we will save the output from that function to a new data frame; it's generally good practice to use different names whenever you create a new variable, so that you don't get confused about what's what.
 
 ```{r add_abbrev, exercise=TRUE, exercise.setup="setup-states"}
-state_df_with_abbrev = mutate(state_df,
+state_df_with_abbrev <- mutate(state_df,
                               state_abbrev=c('AK', 'HI', 'CA', 'TX'))
 state_df_with_abbrev
 ```
 
 ```{r setup-abbrev, exercise.setup="setup-states"}
-state_df_with_abbrev = mutate(state_df,
+state_df_with_abbrev <- mutate(state_df,
                               state_abbrev=c('AK', 'HI', 'CA', 'TX'))
 
 ```
 
-You can also use existing variables within mutate.  For example, let's say that we wanted to create a new variable that expressed population in terms of millions.  We could do this:
+Using mutate, you can also create new variables whose values (i.e. observations) are based on existing variables. For example, let's say that we wanted to create a new variable that expressed population in terms of millions.  We could do this:
 
 ```{r mutate_existing, exercise=TRUE, exercise.setup="setup-states"}
 
-mutate(state_df,
+state_df_with_pop_millions <- mutate(state_df,
        population_millions=population/1000000)
 ```
 
@@ -105,14 +111,16 @@ mutate(state_df,
 Sometimes we might want to select more than one column from the data frame.  We can do this by providing the `select()` function with a vector of variable names rather than a single name.  Let's select the *population* and *state_abbrev* variables from the data frame that we generated in the previous cell:
 
 ```{r select_multiple, exercise=TRUE, exercise.setup="setup-abbrev"}
-select(state_df_with_abbrev, c(state_abbrev, population))
+pop_abbrev_df <- select(state_df_with_abbrev, 
+                        c(state_abbrev, population))
+pop_abbrev_df
 ```
 
-This creates a new data frame containing only the two variables that we wanted to select.  We can also remove a variable by putting a minus sign in front of its name; thus, we could acheive the same outcome by removing the *state* variable:
+This creates a new data frame containing only the two variables that we wanted to select.  We can also remove a variable by putting a minus sign in front of its name; thus, we could achieve the same outcome by removing the *state* variable:
 
 ```{r select_negative, exercise=TRUE, exercise.setup="setup-abbrev"}
-select(state_df_with_abbrev, -state)
-
+df_without_state <- select(state_df_with_abbrev, -state)
+df_without_state
 ```
 The only difference is the order in which the columns appear.
 
@@ -121,13 +129,17 @@ The only difference is the order in which the columns appear.
 Often we want to select particular rows from a data frame, based on the data that they contain.  We can do this using the `filter()` function.  For example, let's say that we want to filter our data frame to only include states with populations greater than 10 million:
 
 ```{r filter_pop, exercise=TRUE, exercise.setup="setup-abbrev"}
-filter(state_df_with_abbrev, population>10000000)
+states_over_10million <- filter(state_df_with_abbrev,
+                                population>10000000)
+states_over_10million
 ```
 
 We could also select rows based on specific values.  Let's say that we wanted to extract the rows for Alaska and California.  We could do that as follows:
 
 ```{r filter_in, exercise=TRUE, exercise.setup="setup-abbrev"}
-filter(state_df_with_abbrev, state_abbrev %in% c('CA', 'AK'))
+specific_states <- filter(state_df_with_abbrev, 
+                          state_abbrev %in% c('CA', 'AK'))
+specific_states
 ```
 
 The `%in%` operator tests whether each value of the variable is a member of the vector that follows it; in this case, it is TRUE for any values that are included in the vector `c('CA', 'TX')`:
@@ -176,7 +188,7 @@ state_df_with_psm <- ...
 
 ```{r psm_exercise-solution}
 state_df_with_psm <- mutate(state_df_with_area,
-                             population_per_sq_mile=population/area_sq_miles)
+        population_per_sq_mile=population/area_sq_miles)
 ```
 
 ```{r psm_exercise-check}
