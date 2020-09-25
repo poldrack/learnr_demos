@@ -55,7 +55,7 @@ load_cleaned_survey_data <- function(){
 
 survey_data <- load_cleaned_survey_data()
 survey_data_by_year <- group_by(survey_data, year)
-mean_prog_by_year <- summarize(survey_data_by_year,
+mean_prog_by_year <- summarise(survey_data_by_year,
                                mean_programming_experience=mean(programming_experience))
 
 ```
@@ -69,14 +69,20 @@ glimpse(survey_data)
 
 ```
 
-First, compute the mean of the *programming_experience* variable by hand, and store it to a variable called *mean_programming_experience*.
+First, compute the mean of the *programming_experience* variable by hand (that is, not using the `mean()` function), and store it to a variable called *mean_programming_experience*.
 
 ```{r mean_progexp_exercise, exercise=TRUE, exercise.setup='survey-setup'}
+
+mean_programming_experience <- ...
+
+mean_programming_experience
 
 ```
 
 ```{r mean_progexp_exercise-solution}
-mean_programming_experience <- mean(survey_data$programming_experience)
+mean_programming_experience <- sum(survey_data$programming_experience)/length(survey_data$programming_experience)
+
+mean_programming_experience
 ```
 
 ```{r mean_progexp_exercise-check}
@@ -85,20 +91,23 @@ grade_code(incorrect='Try again...')
 
 ### Computing the mean by group
 
-Now let's use the commands you learned in the previous tutorial to compute the mean programming experience separately for each different year of students, storing the result to a new variable called *mean_prog_by_year*.  First we need to group the T*survey_data* data frame by year, then we apply the `summarize()` function.  In this case, we just want to compute the mean of the *programming_experience* variable, rather than all of the variables as we did in the previous tutorial.
+Now let's use the commands you learned in the previous tutorial to compute the mean programming experience separately for each different year of students, storing the result to a new variable called *mean_prog_by_year*.  First we need to group the *survey_data* data frame by year, then we apply the `summarise()` function.  In this case, we just want to compute the mean of the *programming_experience* variable, rather than all of the variables as we did in the previous tutorial.
 
 ```{r meanbyyear, exercise=TRUE, message=FALSE, exercise.setup='survey-setup'}
 survey_data_by_year <- group_by(survey_data, year)
-mean_prog_by_year <- summarize(survey_data_by_year,
+mean_prog_by_year <- summarise(survey_data_by_year,
                                mean_programming_experience=mean(programming_experience))
 mean_prog_by_year
 ```
 
 #### Exercise
 
-Create a bar plot using the data frame that was generated in the previous cell.  You should plot *mean_programming_experience* as the Y variable using *year* as the X variable.  For the geometry, you should use `geom_col()` -- this tells ggplot to simply plot the values directly from the data frame.
+Create a bar plot using the data frame that was generated in the previous chunk.  You should plot *mean_programming_experience* as the Y variable using *year* as the X variable.  For the geometry, you should use `geom_col()` -- this tells ggplot to simply plot the values directly from the data frame.
 
 ```{r plot_mean_prog_exercise, exercise=TRUE, exercise.setup='survey-setup'}
+ggplot(____, aes(x=____,
+             y=___)) +
+  ___()
 
 ```
 
@@ -120,42 +129,70 @@ The median is the data point that falls in the middle after the data are ordered
 ```{r median_setup, echo=FALSE}
 my_numbers <- c(3, 9, 5,12, 8)
 sorted_numbers <- sort(my_numbers)
+middle_index <- ceiling(length(sorted_numbers) / 2)
+
 ```
 
-```{r median_byhand, exercise=TRUE}
+```{r median_byhand, exercise=TRUE, exercise.setup='median_setup'}
 my_numbers <- c(3, 9, 5,12, 8)
 sorted_numbers <- sort(my_numbers)
 sorted_numbers
 ```
-To find the median, we can simply take the value in the middle if there is an odd number of values; if the number of values were even, then we would instead take the average of the two numbers in the middle.  How can we find the middle value?  Below there are several possible alternatives - try to figure out which one properly identifies the number in the middle (8).
 
-```{r median_sandbox, exercise=TRUE, exercise.setup='median_setup'}
-sorted_numbers[length(sorted_numbers)/2]
+To find the median, we can simply take the value in the middle if there is an odd number of values; if the number of values were even, then we would instead take the average of the two numbers in the middle.  How can we find the middle value?  If the number of values is odd, then we can simply divide the length of the vector by 2,and round up (which we do using the `ceil()` function:
+
+```{r veclen, exercise=TRUE, exercise.setup='median_setup'}
+
+middle_index <- ceiling(length(sorted_numbers) / 2)
+middle_index
 ```
 
-```{r median_question}
-question("Which of these correctly identifies the middle value (8) from the vector?",
-  answer("sorted_numbers[length(sorted_numbers) / 2]"),
-  answer("sorted_numbers[length(sorted_numbers) / 2 + 1]", correct=TRUE),
-  answer("sorted_numbers[length(sorted_numbers) / 2 - 1]"),
-  random_answer_order = TRUE
-)
+We can confirm that this is the location of the median value:
+
+```{r confirm_median, exercise=TRUE, exercise.setup='median_setup'}
+assert_that(sorted_numbers[middle_index] == median(sorted_numbers))
+```
+
+If there are an even number of values, then we would need to take the average of the two middle values.  For example, let's say that we have 6 values (which we will enter in already sorted order):
+```{r 6vals_setup, echo=FALSE}
+
+my_even_vals <- c(3, 5, 7, 9, 10, 20)
+middle_loc <- length(my_even_vals) / 2
 
 ```
 
-```{r median_question2}
-question("Why did that work? Use the cell above to test possible answers if needed.",
-  answer("When length(sorted_numbers)/2 is used as an index, it gets rounded down to 2.", correct=TRUE),
-  answer("length(sorted_numbers) returns the actual length minus one (4)."),
-  answer("When a number is used as an index for a vector, one is automatically subtracted from the number"),
-  random_answer_order = TRUE
-)
+```{r 6vals, exercise=TRUE}
 
+my_even_vals <- c(3, 5, 7, 9, 10, 20)
+
+```
+
+The median of this vector is the average of the two middle values (7 and 9).  How do we find the locations of those so that we can extract them automatically?  Similar to the previous example, we first divide the length of the vector by 2, which gives us the middle location:
+
+```{r midloc, exercise=TRUE, exercise.setup='6vals_setup'}
+middle_loc <- length(my_even_vals) / 2
+middle_loc
+```
+
+That gives us the first of the two middle locations; to get the second one, we simply add one to this:
+
+```{r middle_locs, exercise=TRUE, exercise.setup='6vals_setup'}
+my_even_vals[middle_loc:(middle_loc +1)]
+
+```
+
+Now we can compute the median and confirm that it matches the result from the built-in `median()` function:
+
+```{r checkmedian, exercise=TRUE, exercise.setup='6vals_setup'}
+
+my_median <- mean(my_even_vals[middle_loc:(middle_loc +1)])
+
+assert_that(my_median == median(my_even_vals))
 ```
 
 ### Comparing the mean and median
 
-The median is less sensitive to outliers than the mean.  Let's see an example of this.  We will create 
+The median is less sensitive to outliers than the mean.  To see an example of this, we will create some artificial data with a long tail, using a custom function called `simulate_long_tail()`.  Let's create a new variable called *longtail_data* using this function, and then glimpse the contents:
 
 ```{r powerlaw_setup}
 
@@ -170,18 +207,26 @@ simulate_long_tail <- function(xmin=0.1, xmax=1000,
 
 longtail_data = simulate_long_tail()
 
-longtail_summary <- summarize(longtail_data,
+longtail_summary <- summarise(longtail_data,
                               mean_z=mean(z),
                               median_z=median(z))
 
 ```
 
+```{r longtail_glimpse, exercise=TRUE, exercise.setup='powerlaw_setup'}
+
+longtail_data <- simulate_long_tail()
+glimpse(longtail_data)
+
+```
+
+We can see that the data frame contains a single variable called *z*, so now let's plot a histogram of that variable:
+
 ```{r make_powerlaw_data, exercise=TRUE, exercise.setup='powerlaw_setup'}
-longtail_data = simulate_long_tail()
 ggplot(longtail_data, aes(z)) +
   geom_histogram(bins=50)
 ```
-
+We can see that this distribution is highly skewed, with a number of extreme values in its tail.
 
 ```{r median_mean_question}
 question("For this dataset, which value do you expect to be larger?",
@@ -195,7 +240,7 @@ question("For this dataset, which value do you expect to be larger?",
 
 #### Exercise
 
-First, compute the mean and median of the *z* variable from the *longtail_data* data frame, using the built-in `mean()` and `median()` functions along with the `summarize()` function.  This should create a new data frame called *longtail_summary* that contains variables called *mean_z* and *median_z*.
+First, compute the mean and median of the *z* variable from the *longtail_data* data frame, using the built-in `mean()` and `median()` functions along with the `summarise()` function.  This should create a new data frame called *longtail_summary* that contains variables called *mean_z* and *median_z*.
 
 ```{r compute_summary, exercise=TRUE, exercise.setup='powerlaw_setup'}
 
@@ -206,9 +251,10 @@ longtail_summary
 ```
 
 ```{r compute_summary-solution}
-longtail_summary <- summarize(longtail_data,
+longtail_summary <- summarise(longtail_data,
                               mean_z=mean(z),
                               median_z=median(z))
+longtail_summary
 ```
 
 ```{r compute_summary-check}
@@ -252,6 +298,7 @@ A <- c(1, 2, 2, 1)
 B <- c(0, 3, 3, 0)
 var_A <- sum((A - mean(A))**2)/(length(A)- 1)
 var_B <- sum((B - mean(B))**2)/(length(B)- 1)
+sd_A <- sd(A)
 
 ```
 
@@ -276,25 +323,41 @@ Let's compute the variance of each by hand.  Remember that the variance of a sam
 $$
 \hat{\sigma^2} = \frac{\sum^N_1 (x_i - \bar{x})^2}{N - 1}
 $$
-Let's compute this for our variables. For each one we:
+Let's compute this by hand for our A variable. To do this, we:
 
-- create a vector of deviations for each value from the mean
-- square those values and add them up
+- create a vector of differences for each value from the mean (which we call *errors*)
+- square the error values
+- add up the squared error values
 - divide the sum by N-1
 
 ```{r var_by_hand, exercise=TRUE, exercise.setup='var_setup'}
-var_A <- sum((A - mean(A))**2)/(length(A)- 1)
-print(var_A)
-var_B <- sum((B - mean(B))**2)/(length(B)- 1)
-print(var_B)
+
+N <- length(A)
+errors <- A - mean(A)
+squared_errors <- errors**2
+sum_squared_errors <- sum(squared_errors)
+var_A <- sum_squared_errors / (N - 1)
+var_A
+
 ```
 
-
-Let's make sure that these are the same as the values obtained from the built-in `var()` function:
+Let's make sure that this value is the same as the value obtained from the built-in `var()` function:
 
 ```{r check_vars, exercise=TRUE, exercise.setup='var_setup'}
 assert_that(var_A == var(A))
-assert_that(var_B == var(B))
+```
+
+The standard deviation is simply the square root of the variance:
+
+```{r computesd, exercise=TRUE, exercise.setup='var_setup'}
+sd_A <- sqrt(var_A)
+sd_A
+```
+
+We would usually compute the standard deviation using the built-in `sd()` function. Let's confirm that its result is the same as ours:
+
+```{r checksd, exercise=TRUE, exercise.setup='var_setup'}
+assert_that(sd(A) == sd_A)
 ```
 
 ```{r std_question}
@@ -309,7 +372,7 @@ question("Which of the following would be the correct code to compute the standa
 
 ## Z-scores
 
-Remember that Z-scores are values that have been converted to a mean of zero and a standard deviation of one.  Let's covert our *my_numbers* vector from earlier into a set of Z-scores.  First, take a look at the mean and standard deviation of those values:
+Remember that Z-scores are values that have been converted to a mean of zero and a standard deviation of one.  Let's convert our *my_numbers* vector from earlier into a set of Z-scores.  First, take a look at the mean and standard deviation of those values:
 
 ```{r zscore, exercise=TRUE, exercise.setup='mean_setup'}
 
@@ -329,7 +392,7 @@ question("Which of the following is the correct way to convert these to Z-scores
 
 #### Exercise
 
-Enter the correct code to compute the Z-scores into the equation, to create a new variable called *my_zscores*.  Then, convert these scores to standardized scores with a mean of 100 and a standard deviation of 10, saving them to a new variable called *my_std_scores*.
+Enter the code to compute the Z-scores for *my_numbers* and store them to a new variable called *my_zscores*.  Then, convert these scores to standardized scores with a mean of 100 and a standard deviation of 10, saving those to a new variable called *my_std_scores*.
 
 ```{r zscore_exercise, exercise=TRUE, exercise.setup='mean_setup'}
 
@@ -345,5 +408,6 @@ my_std_scores <- my_zscores * 10 + 100
 
 ```{r zscore_exercise-check}
 grade_code(incorrect='Try again...')
+
 ```
 
