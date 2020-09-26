@@ -216,17 +216,22 @@ This tells us that if we did our experiment many times, we would get a result of
 flip_df <- data.frame(nheads = seq(0, 10))
 flip_df <- mutate(flip_df, 
                   probability=dbinom(nheads, 10, .5))
+flip_df_cumulative <- mutate(flip_df, 
+                  cumulative_prob=pbinom(nheads, 10, .5))
+flip_df_cumulative_upper <- mutate(flip_df, 
+                  cumulative_prob_upper=pbinom(nheads, 10, .5, lower.tail=FALSE))
 
 ```
 
 In this exercise you will compute the probability of each possible number of heads out of 10 flips with a probability of 0.5, and plot these probabilities for each value using a bar plot.  First create a data frame called *flip_df* that contains a variable called *heads* that contains all of the possible numbers of heads that could occur on ten flips (don't forget to include zero!).  Then, use `mutate()` to add a variable called *probability* that contains the results of `dbinom()` for each value of *nheads*.  Then plot these using `ggplot()`, with *nheads* as the x variable and *probability* as the y variable.  To create the bar graph, you will need to use `geom_bar(stat='identity')` since by default `geom_bar()` tries to count values rather than simply plotting the values that are present.
 
 ```{r plotdbinom, exercise=TRUE}
-flip_df <- data.frame(nheads = seq(0, 10))
+flip_df <- data.frame(nheads = ...)
 flip_df <- mutate(flip_df, 
-                  probability=dbinom(nheads, 10, .5))
-ggplot(flip_df, aes(x=nheads, y=probability)) + 
-  geom_bar(stat='identity')
+                  probability=...)
+
+ggplot(flip_df, aes(...)) + 
+  ...
 ```
 
 ```{r plotdbinom-solution}
@@ -253,35 +258,61 @@ More often, what we want to know is not the probability of a particular value, b
 
 #### Exercise
 
-Plot the results of `pbinom()` for all possible numbers of heads, using `geom_line(stat='identity')`.  First, add a new variable to the *flip_df* data frame called *cumulative_prob* that contains the results from `pbinom()` applied to each value of *nheads*.  Then plot these using a line plot, with `geom_line(stat='identity')`.  The starter code also includes a command to set the tick marks on the x axis (using `scale_x_continuous()`).
+Plot the results of `pbinom()` for all possible numbers of heads, using `geom_line(stat='identity')`.  First, add a new variable to the *flip_df* data frame called *cumulative_prob* that contains the results from `pbinom()` applied to each value of *nheads*.  Then plot these as a bar plot, using the same function as above.  The starter code also includes a command to set the tick marks on the x axis (using `scale_x_continuous()`).
 
 ```{r pbinomplot, exercise=TRUE, exercise.setup='binom_setup'}
-flip_df <- mutate(flip_df, 
-                  cumulative_prob=pbinom(nheads, 10, .5))
-ggplot(flip_df, aes(x=nheads, y=cumulative_prob)) + 
-  geom_line(stat='identity') + 
+flip_df_cumulative <- mutate(flip_df, 
+                  cumulative_prob=...)
+
+ggplot(flip_df_cumulative, aes(...)) + 
+  ... +
   scale_x_continuous(breaks=seq(0, 10))
 ```
 
-This shows us the *lower tail* probability -- that is, the 
-
-
-```{r pbinom, exercise=TRUE}
-
-p_3_or_fewer_heads <- pbinom(3, 10, 0.5)
-p_3_or_fewer_heads
+```{r pbinomplot-solution}
+flip_df_cumulative <- mutate(flip_df, 
+                  cumulative_prob=pbinom(nheads, 10, .5))
+ggplot(flip_df_cumulative, aes(x=nheads, y=cumulative_prob)) + 
+  geom_bar(stat='identity') + 
+  scale_x_continuous(breaks=seq(0, 10))
 ```
 
-This tells us that if we were to repeat our experiment with 10 flips many times, we would expect to see 3 or fewer heads about 17% of time, which is not *that* uncommon. 
+```{r pbinomplot-check}
+grade_code(incorrect='Try again...')
+```
+
+This plot shows us the *lower tail* probability -- that is, the likelihood of a value *as small or smaller* than our value in question.  In other cases we might want to know the likelihood of a value *as large or larger* than some particular value, which we refer to as the *upper tail*.  Have a look at the help page for `pbinom()` and figure out how you can modify your code from the previous exercise to show the upper tail rather than the lower tail probability:
+
+```{r pbinomplot_lower, exercise=TRUE, exercise.setup='binom_setup'}
+flip_df_cumulative_upper <- mutate(flip_df, 
+                  cumulative_prob_upper=...)
+
+ggplot ...
+
+```
+
+```{r pbinomplot_lower-solution}
+flip_df_cumulative_upper <- mutate(flip_df, 
+                  cumulative_prob_upper=pbinom(nheads, 10, .5, lower.tail=FALSE))
+
+ggplot(flip_df_cumulative_upper, aes(x=nheads, y=cumulative_prob_upper)) + 
+  geom_bar(stat='identity') + 
+  scale_x_continuous(breaks=seq(0, 10))
+```
+
+
+```{r pbinomplot_lower-check}
+grade_code(incorrect='Try again...')
+```
 
 ### An example
 The Astra-Zeneca clinical trial of the COVID-19 vaccine, which aimed to enroll 30,000 patients, was halted on Sept 6, 2020 after one of the patients in the study developed a serious condition known as *transverse myelitis*, which attacks the nervous system.  This disorder occurs in roughly 4 in every million people in any year.  What we would like to know is: How likely would it be for one or more of the people in the study to develop this disorder due to random chance (that is, not as a side effect of the vaccine)?
 
-We can use the `pbinom()` function to compute this.  This function takes three arguments:
+We can use the `pbinom()` function to compute this.  In this case the arguments refer to:
 
-- the number of "successes" (in this case, the number of patients with the disease)
-- the number of "trials" (in this case, the number of patients in the study - we don't actually know how many were enrolled before the study was stopped, so we will just use the full 30,000 as our estimate)
-- the probability of the event occurring (based on the natural occurrence rate of 4 per million people)
+- the number of "successes" - in this case, the number of patients with the disease
+- the number of "trials" - in this case, the number of patients in the study - we don't actually know how many were enrolled before the study was stopped, so we will just use the full 30,000 as our estimate
+- the probability of the event occurring - based on the natural occurrence rate of 4 per million people
 
 Because we want to know the probability of 1 or more cases of transverse myelitis (rather than the probability of exactly one case), we must use the *lower.tail=FALSE* argument, so that the function will return the "upper tail" of the distribution.
 
