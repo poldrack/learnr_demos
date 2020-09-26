@@ -124,7 +124,11 @@ simpsons <- data.frame(name=c("Homer", "Marge", "Lisa", "Bart", "Maggie"),
 ```
 
 ```{r namesvec_loop, exercise=TRUE, exercise.setup='names-setup'}
+# first create the index values
+values <- ...
 
+# then loop over these values
+for (index in values)...
 
 ```
 
@@ -180,7 +184,7 @@ for (testrun in seq(1, nsamples)){
 
 #### Exercise
 
-Plot a histogram containing the sample estimates of mean height, and place a blue line at the population mean, by filling in the missing code sections with the appropriate commands.
+Plot a histogram containing the sample estimates of mean height, and place a blue line at the population mean, by filling in the missing code sections with the appropriate commands.  Hint: Use the `pull()` function to extract the mean height value from the *NHANES_summary* data frame.
 
 ```{r plot_sampdist, exercise=TRUE}
 
