@@ -15,10 +15,10 @@ knitr::opts_chunk$set(exercise.checker = gradethis::grade_learnr)
 
 ## Data Frames
 
-A data frame is a way of packaging together a number of variables that reflect the same observations, very similar to the spreadsheets that you have probably encountered before.  Each column in the table reflects a single variable, and each row reflects a single observation across those variables.  For example, let's combine the data on state populations (which you encountered in the previous exercise on vectors) into a single data frame; we will also add the data for California and Texas.  We will use a function called `tibble()` to create a fancy form of a data frame known as a *tibble*.  This function is part of a set of functions known as the *Tidyverse*, which you will learn more about as we go along.  
+A data frame is a way of packaging together a number of variables that reflect the same observations, very similar to the spreadsheets that you have probably encountered before.  Each column in the table reflects a single variable, and each row reflects a single observation across those variables.  For example, let's combine the data on state populations (which you encountered in the previous exercise on vectors) into a single data frame; we will also add the data for California and Texas.  We can create a new data frame using the `data.frame()` function.  We give the function the name and values for each of the variables that we would like to include in the data frame:
 
 ```{r stateDF, exercise=TRUE}
-state_df <- tibble(state=c( 'Alaska', 'Hawaii', 'California', 'Texas'),
+state_df <- data.frame(state=c( 'Alaska', 'Hawaii', 'California', 'Texas'),
                        population=c(731415, 1415872, 39512223, 28995881))
 state_df
 ```
@@ -28,7 +28,7 @@ This should create a data frame with four rows and two columns; because we put t
 Another function that we can use to get an overview of the contents of a data frame is `glimpse()`:
 
 ```{r setup-states, include=FALSE}
-state_df <- tibble(state=c( 'Alaska', 'Hawaii', 'California', 'Texas'),
+state_df <- data.frame(state=c( 'Alaska', 'Hawaii', 'California', 'Texas'),
                        population=c(731415, 1415872, 39512223, 28995881))
 
 ```
