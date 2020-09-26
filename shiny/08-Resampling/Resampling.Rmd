@@ -79,7 +79,7 @@ runif(1)
 grade_code(incorrect='Try again...')
 ```
 
-Now let's say that we want to obtain 4 random numbers that vary between 2 and 4. How would you obtain those?
+Now let's say that we want to obtain 4 random numbers that vary between 2 and 4. How would you obtain those?  Hint: Look at the help information for `runif()`.
 
 ```{r runif2, exercise=TRUE}
 
@@ -87,7 +87,7 @@ Now let's say that we want to obtain 4 random numbers that vary between 2 and 4.
 ```
 
 ```{r runif2-solution}
-runif(4) * 2 + 2
+runif(4, min=2, max=4)
 ```
 
 ```{r runif2-check}
