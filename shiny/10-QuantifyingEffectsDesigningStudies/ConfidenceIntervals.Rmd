@@ -56,12 +56,28 @@ $$
 Let's first create some data to use as an example. We will sample 100 values from a standard normal distribution (i.e. with a mean of zero and a standard devation of one).  
 
 ```{r ci_setup, echo=FALSE}
-set.seed(12345)
+set.seed(1234567)
 sample_size <- 100
-my_sample <- rnorm(100)
+my_sample <- rnorm(sample_size)
 critical_value <- qnorm(0.975)
 my_sample_mean <- mean(my_sample)
 my_sample_sd <- sd(my_sample)
+
+num_bootstrap_samples <- 1000
+
+bootstrap_df <- data.frame(median=array(dim=num_bootstrap_samples))
+set.seed(12345678)
+for (samp_num in 1:num_bootstrap_samples){
+  resampled_data <- sample(my_sample, replace=TRUE)
+  bootstrap_df$median[samp_num] <- median(resampled_data)
+  bootstrap_df$mean[samp_num] <- mean(resampled_data)
+}
+
+
+bs_ci_lower_median = quantile(bootstrap_df$median, .025)
+bs_ci_upper_median = quantile(bootstrap_df$median, .97)
+bs_ci_lower_mean = quantile(bootstrap_df$mean, .025)
+bs_ci_upper_mean = quantile(bootstrap_df$mean, .97)
 
 ```
 
@@ -167,35 +183,112 @@ grade_code(incorrect='Try again...')
 
 ```
 
-### Simulating the confidence interval
+## Computing confidence intervals using the bootstrap
 
-Here we will simulate the confidence to confirm that it actually works as advertised.  To do this, we will repeatedly sample data from a normal distribution with a true mean of 100 and standard deviation of 10, and compute the 95% confidence interval for the mean. If the confidence interval works correctly, then it should contain the true mean (100) 95% of the time.
+In some cases we don't have a theoretical distribution that we can use to compute a confidence interval. In these cases, we can use the bootstrap procedure to compute the confidence interval.  Here we will perform a bootstrap by hand to show how it works.
 
+The bootstrap involves repeatedly resamping the data *with replacement* and computing our statistic of interest.  Let's say that we were interested in computing the median for our sample and its confidence interval. Since there is no theoretical distribution that describes the sampling distribution of the median, we will use the bootstrap to do this.
 
-```{r simci, exercise=TRUE}
-set.seed(12345)
-num_simulation_runs <- 5000
-sample_size <- 100
-ci_percent <- 95
-normal_cutoffs_95pct <- c(qnorm((100 - ci_percent)/200),
-                          qnorm(1 - (100 - ci_percent)/200))
-true_mean = 100
-true_sd = 10
+#### Exercise
 
-captured <- array(dim=num_simulation_runs)
+Compute the sample median for the *my_sample* variable defined earlier.
 
-for (sim_run in 1:num_simulation_runs){
-  # take the sample
-  random_sample <- rnorm(sample_size, mean=true_mean, sd=true_sd)
-  # compute the confidence interval
-  sample_mean <- mean(random_sample)
-  sample_SEM <- sd(random_sample)/sqrt(sample_size)
-  sample_CI = sample_mean + sample_SEM*normal_cutoffs_95pct
-  captured[sim_run] = sample_CI[1] < true_mean & sample_CI[2] > true_mean
-}
+```{r median_exercise, exercise=TRUE, exercise.setup='ci_setup'}
 
-mean(captured)
+my_sample_median <- ...
+
+my_sample_median
+
+```
+
+```{r median_exercise-solution}
+
+my_sample_median <- median(my_sample)
+
+my_sample_median
+```
+
+```{r median_exercise-check}
+grade_code(incorrect='Try again...')
+
 ```
 
 
-This shows us that the confidence interval performs as advertised.  Try running the code chunk above changing the percentage that is specified in the *ci_percent* variable, and confirm that the percentage of captured means 
+Now let's perform the boostrap. To do this, we repeatedly resample the data and compute the median.  We will also compute the mean while we are at it, so that we can compare the results.
+
+```{r boostrap, exercise=TRUE, exercise.setup='ci_setup'}
+
+num_bootstrap_samples <- 1000
+
+bootstrap_df <- data.frame(median=array(dim=num_bootstrap_samples))
+
+set.seed(12345678)
+
+for (samp_num in 1:num_bootstrap_samples){
+  resampled_data <- sample(my_sample, replace=TRUE)
+  bootstrap_df$median[samp_num] <- median(resampled_data)
+  bootstrap_df$mean[samp_num] <- mean(resampled_data)
+}
+
+```
+
+#### Exercise
+
+First, find the 2.5th and 97.5th quantiles in the bootstrap medians and means, using the `quantile()` function.  Then, plot a density plot of the bootstrap medians (stored in the *median* variable within the *bootstrap_df* data frame). Add vertical blue lines in the plot for the values of the median confidence intervals. Then, add red vertical lines to show the locations of the upper and lower bootstrap confidence interval values for the mean.
+
+```{r bshist, exercise=TRUE, exercise.setup='ci_setup'}
+
+# use quantile to compute the .025 and .975 quantiles for the bootstrap medians
+bs_ci_lower_median <- quantile(...
+bs_ci_upper_median <- quantile(...
+
+# do the same for the bootstrap means
+bs_ci_lower_mean <- quantile(...
+bs_ci_upper_mean <- quantile(...
+
+# plot the 
+ggplot(bootstrap_df, ...) + 
+  ... + # add a density plot
+  ... + # add the vertical lines for each confidence interval limit
+  ... + 
+  ... + 
+  ... 
+ 
+
+```
+
+```{r bshist-solution}
+
+
+bs_ci_lower_median <- quantile(bootstrap_df$median, .025)
+bs_ci_upper_median <- quantile(bootstrap_df$median, .975)
+bs_ci_lower_mean <- quantile(bootstrap_df$mean, .025)
+bs_ci_upper_mean <- quantile(bootstrap_df$mean, .975)
+
+ggplot(bootstrap_df, aes(x=median)) + 
+  geom_density() + 
+  geom_vline(xintercept=bs_ci_lower_median, color='blue') + 
+  geom_vline(xintercept=bs_ci_upper_median, color='blue') + 
+  geom_vline(xintercept=bs_ci_lower_mean, color='red') + 
+  geom_vline(xintercept=bs_ci_upper_mean, color='red') 
+ 
+
+```
+```{r bshist-check}
+grade_code(incorrect='Try again...')
+
+```
+
+
+
+```{r ci_question}
+question("What is the most appropriate interpretation of this figure?",
+  answer("Our estimate of the mean is more precise than our estimate of the median", correct=TRUE),
+  answer("Our estimate of the mean is less precise than our estimate of the median"),
+  answer("The estimates of the mean and median are equally precise"),
+  random_answer_order = TRUE
+)
+```
+
+
+
