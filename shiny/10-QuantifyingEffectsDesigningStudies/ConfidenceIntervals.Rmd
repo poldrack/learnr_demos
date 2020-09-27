@@ -1,0 +1,201 @@
+---
+title: "Confidence Intervals"
+output: 
+  learnr::tutorial:
+    progressive: true
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(gradethis)
+library(tidyverse)
+library(assertthat)
+library(ggplot2)
+knitr::opts_chunk$set(echo = FALSE)
+tutorial_options(exercise.eval = FALSE)
+knitr::opts_chunk$set(exercise.checker = gradethis::grade_learnr)
+
+```
+
+## Confidence Intervals
+
+### What is a confidence interval?
+
+
+```{r ci_def_question}
+question("Which of the following is the correct definition for a confidence interval for the mean?",
+  answer("mean ± critical value * standard error", correct=TRUE),
+  answer("mean ± critical value / standard deviation"),
+  answer("mean ± critical value * standard deviation"),
+  answer("mean ± mean * standard error"),
+  random_answer_order = TRUE
+)
+```
+
+
+```{r ci_interp_question}
+question("We collect a sample and compute the confidence interval for the mean, and find that it spans from 3.2 to 6.8.  What is the most appropriate interpretation of this finding?",
+  answer("If we were to repeat this procedure across multiple samples, the resulting confidence interval for each sample will contain the true population mean 95% of the time", correct=TRUE),
+  answer("If we were to repeat this procedure across multiple samples, 95% of the time the true population mean will fall between 3.2 and 6.8."),
+  answer("There is a probability of .95 that the true population mean lies between 3.2 and 6.8"),
+  answer("We have 95% confidence that the true population mean lies between 3.2 and 6.8"),
+  random_answer_order = TRUE
+)
+```
+
+
+### Computing a confidence interval using the normal distribution
+
+As we saw in the previous quiz, the definition for a confidence interval for the mean is:
+
+$$
+CI = \text{mean} \pm \text{critical value} * \text{standard error}
+$$
+
+Let's first create some data to use as an example. We will sample 100 values from a standard normal distribution (i.e. with a mean of zero and a standard devation of one).  
+
+```{r ci_setup, echo=FALSE}
+set.seed(12345)
+sample_size <- 100
+my_sample <- rnorm(100)
+critical_value <- qnorm(0.975)
+my_sample_mean <- mean(my_sample)
+my_sample_sd <- sd(my_sample)
+
+```
+
+```{r sample, exercise=TRUE, exercise.setup='ci_setup'}
+sample_size <- 100
+my_sample <- rnorm(sample_size)
+
+```
+
+#### Exercise
+
+Compute the sample mean and standard deviation for this sample.
+
+```{r samplemean, exercise=TRUE, exercise.setup='ci_setup'}
+my_sample_mean <- ...
+my_sample_sd <- ...
+```
+
+```{r samplemean-solution}
+my_sample_mean <- mean(my_sample)
+my_sample_sd <- sd(my_sample)
+```
+
+```{r samplemean-check}
+grade_code(incorrect='Try again...')
+
+```
+
+### Determining the critical value
+
+The critical value is based on a known distribution -- in this case, the standard normal distribution.  We want to find the values of our distribution that cutoff a particular percentage of the distribution in the tails.  For example, for a 95% confidence interval, we want to find the values that contain 95% of the distribution, leaving 5% in the tails. This means that we need to find the cutoffs that leave 2.5% of the distribution in each tail (upper and lower), so that in total there will be 5% of the distribution outside of our interval.  These are the 2.5th and 97.5th percentiles of the distribution. 
+
+We can compute the value of the normal distribution that cuts off a particular amount of the distribution using the *quantile* function for that distribution; for the normal distribution, this is the `qnorm()` function.  We have created a special function called `plot_normal_quantile()` that allows you to see the results for different quantiles. In the following cell, try entering various values between zero and one to see what the resulting cutoff is.
+
+```{r normal_quantile_plot, echo=FALSE}
+
+
+plot_normal_quantile <- function(q){
+  if (q <= 0 | q >= 1){
+    return('ERROR: q must be between zero and one')
+  }
+  normdf = data.frame(xval=seq(-4, 4, 0.01)) %>%
+    mutate(dnorm=dnorm(xval))
+  cutoff = qnorm(q)
+  ggplot(normdf, aes(xval,dnorm)) + 
+    geom_line() + 
+    xlab('value') + 
+    ylab('density') + 
+    ylim(0, 0.45) +
+    geom_vline(xintercept=cutoff, color='blue') + 
+    geom_text(x=cutoff + .85, y=0.42, label=sprintf('x = %0.2f (%0.3f%%)', cutoff, q))
+}
+```
+
+```{r qnormplot, exercise=TRUE, exercise.setup='normal_quantile_plot'}
+plot_normal_quantile(0.975)
+```
+
+```{r qnorm_question}
+question("What is the q value that you need to enter in order to find x = 0?",
+  answer("0"),
+  answer("0.5", correct=TRUE),
+  answer("0.95"),
+  answer("0.975")
+)
+```
+
+In particular, note that the values are symmetric -- that is, the value that cuts off the bottom 2.5% is simply the negative version of the value that cuts off the top 2.5%. That's why we can use the $\pm$ in the formula to create the confidence interval.
+
+#### Exercise
+
+Now that you know how to find the appropriate cutoff for the normal distribution, let's create our 95%  confidence interval, using the *my_sample_mean* and *my_sample_sd* variables that you created earlier.You will need to do the following:
+
+- compute the standard error of the mean
+- determine the critical value for the normal distribution that cuts off 2.5% of the distribution in each tail, using the `qnorm()` function
+- compute the upper and lower limits of the confidence interval by adding or subtracting the appropriate quantity using the formula shown above
+
+```{r ci_exercise, exercise=TRUE, exercise.setup='ci_setup'}
+my_sample_SEM <- ...
+
+normal_cutoff <- ...
+
+ci_lower <- ...
+
+ci_upper <- ... 
+
+paste("CI", ci_lower, ci_upper)
+```
+
+```{r ci_exercise-solution}
+my_sample_SEM <- my_sample_sd / sqrt(sample_size)
+
+normal_cutoff <- qnorm(0.975)
+
+ci_lower <- my_sample_mean - normal_cutoff * my_sample_SEM
+
+ci_upper <- my_sample_mean + normal_cutoff * my_sample_SEM
+
+```
+
+```{r ci_exercise-check}
+grade_code(incorrect='Try again...')
+
+```
+
+### Simulating the confidence interval
+
+Here we will simulate the confidence to confirm that it actually works as advertised.  To do this, we will repeatedly sample data from a normal distribution with a true mean of 100 and standard deviation of 10, and compute the 95% confidence interval for the mean. If the confidence interval works correctly, then it should contain the true mean (100) 95% of the time.
+
+
+```{r simci, exercise=TRUE}
+set.seed(12345)
+num_simulation_runs <- 5000
+sample_size <- 100
+ci_percent <- 95
+normal_cutoffs_95pct <- c(qnorm((100 - ci_percent)/200),
+                          qnorm(1 - (100 - ci_percent)/200))
+true_mean = 100
+true_sd = 10
+
+captured <- array(dim=num_simulation_runs)
+
+for (sim_run in 1:num_simulation_runs){
+  # take the sample
+  random_sample <- rnorm(sample_size, mean=true_mean, sd=true_sd)
+  # compute the confidence interval
+  sample_mean <- mean(random_sample)
+  sample_SEM <- sd(random_sample)/sqrt(sample_size)
+  sample_CI = sample_mean + sample_SEM*normal_cutoffs_95pct
+  captured[sim_run] = sample_CI[1] < true_mean & sample_CI[2] > true_mean
+}
+
+mean(captured)
+```
+
+
+This shows us that the confidence interval performs as advertised.  Try running the code chunk above changing the percentage that is specified in the *ci_percent* variable, and confirm that the percentage of captured means 
