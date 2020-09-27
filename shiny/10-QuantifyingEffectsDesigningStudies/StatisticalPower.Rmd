@@ -1,0 +1,178 @@
+---
+title: "Statistical Power"
+output: 
+  learnr::tutorial:
+    progressive: true
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(gradethis)
+library(tidyverse)
+library(assertthat)
+knitr::opts_chunk$set(echo = FALSE)
+tutorial_options(exercise.eval = FALSE)
+knitr::opts_chunk$set(exercise.checker = gradethis::grade_learnr)
+```
+
+## Statistical Power
+
+### The goal of statistical power analysis
+
+```{r ci_question}
+question("What is the goal of statistical power analysis? Choose all that apply",
+  answer("Determine the necessary sample size for a planned study", correct=TRUE),
+  answer("Determine the likelihood of Type II errors given a particular sample size and effect size", correct=TRUE),
+  answer("Determine the likelihood of Type I errors given a particular sample size and effect size"),
+  answer("Determine the effect size for a given dataset"),
+  random_answer_order = TRUE
+)
+```
+
+### Computing statistical power
+
+The most common usage of statistical power analysis is to determine the necessary sample size for a study, given the expected effect size.  Let's say that we want to perform a study to determine whether a particular drug treatment for COVID-19 is effective at reducing the length of hospitalization for people who have been hospitalized witht the disease.  To do this, we will randomly assign individuals to either receive the treatment, or to receive a placebo drug.  We want to determine how many people we need to test in order to be 80% sure that we find an effect if it is truly present.  We need to determine the effect size that we would like to be able to find; let's say that we think that a difference of two days in the length of hospitalization is a clinically important difference.  Based on published data, we can estimate that the standard deviation of the length of hospital stays is 6.
+
+```{r power_setup}
+# data from https://bmcmedicine.biomedcentral.com/articles/10.1186/s12916-020-01726-3
+# used data for countries outside of China
+mean_LOS <- 5
+IQR <- 6
+sd_LOS = IQR/1.35
+
+```
+
+Based on this, we can use the `power.t.test()` function to estimate the sample size that we would need in order to have 80% power to detect a true reduction of two days in hospital stay.  This function requires us to specify several different quantities:
+
+- *delta*: the magnitude of the effect that we wish to find (in this case, 1 day)
+- *sd*: the standard deviation of the measurement (in this case, 6 days)
+- *power*: the intended power level (in this case, 0.8)
+- *sig.level*: the intended significance level (in this case, 0.05)
+- *type*: what kind of test are we doing?  (in this case, "two.sample" because we are comparing two groups)
+- *alternative*: what kind of test are we doing? in this case, "two.sided" because we will perform a two-sided test since we want to be able to detect either positive or negative effects of the drug)
+
+#### Exercise
+
+Given the values specified above, use the `power.t.test()` function to determine the necessary sample size for your study:
+
+```{r power, exercise=TRUE}
+
+power.t.test(...
+             
+```
+
+```{r power-solution}
+
+power.t.test(delta=2, sd=6, power=0.8, sig.level=0.05, type='two.sample', alternative = 'two.sided')
+```
+
+```{r power-check}
+grade_code(incorrect='Try again...')
+
+```
+
+## Simulating statistical power
+
+We can use simulation to confirm that our statistical power analysis result actually works.  To do this, we will repeatedly sample individuals from normal distributions with the specified delta and standard deviation, perform a t-test to compare them, and record how many times it comes out significant.
+
+```{r powersim_setup}
+num_simulation_runs <- 500
+placebo_mean <- 10
+treatment_effect <- 2
+drug_mean <- placebo_mean - treatment_effect
+stays_sd <- 6
+group_size <- 142
+
+p_values <- array(dim=num_simulation_runs)
+set.seed(123)
+for (sim_run in 1:num_simulation_runs){
+  drug_group = rnorm(group_size, mean=drug_mean, sd=stays_sd)
+  placebo_group = rnorm(group_size, mean=placebo_mean, sd=stays_sd)
+  p_values[sim_run] <- t.test(drug_group, placebo_group, 'two.sided')$p.value
+}
+
+mean(p_values < 0.05)
+
+```
+
+
+First, let's set up all of the parameters that we need for our simulation. It is always best to create clearly named variables that contain each of the important values, rather than putting numbers directly into the code.
+
+```{r powersim_params, exercise=TRUE}
+# number of simulation runs
+num_simulation_runs <- 500
+
+# mean length of hospital stay for the placebo group
+placebo_mean <- 10
+
+# different in length of stay for the treatment group
+treatment_effect <- 2
+
+# mean length of stay for treatment group
+drug_mean <- placebo_mean - treatment_effect
+
+# standard deviation of hospital stay length
+stays_sd <- 6
+
+# size of each group, determined from the power analysis
+group_size <- 142
+
+```
+
+
+#### Exercise
+
+Fill in the code below to create a simulation that creates random data for the drug and placebo groups, performs a t test, and stores the p-value.  Then compute the proportion of significant results by testing for how often the p-value is less than our threshold of 0.05.
+
+```{r powersim_exercise, exercise=TRUE, exercise.setup='powersim_setup'}
+
+# create an empty array to store the results, with size based on the number of simulation runs
+p_values <- ...
+
+# set the random seed - don't change this!
+set.seed(123)
+
+for (sim_run in 1:num_simulation_runs){
+  # sample from normal distribution for the treatment group
+  drug_group = ...
+  
+  # sample from normal distribution for the placebo group
+  placebo_group = ...
+  
+  # perform the t-test and save the p-value - this code is provided
+  p_values[sim_run] <- t.test(drug_group, placebo_group, 'two.sided')$p.value
+}
+
+# compute power by determining the proportion of p_values that are less than 0.05
+power <- ...
+power
+```
+
+```{r powersim_exercise-solution}
+
+# create an empty array to store the results, with size based on the number of simulation runs
+p_values <- array(dim=num_simulation_runs)
+
+# set the random seed - don't change this!
+set.seed(123)
+
+for (sim_run in 1:num_simulation_runs){
+  # sample from normal distribution for the treatment group
+  drug_group = rnorm(group_size, mean=drug_mean, sd=stays_sd)
+  
+  # sample from normal distribution for the placebo group
+  placebo_group = rnorm(group_size, mean=placebo_mean, sd=stays_sd)
+  
+  # perform the t-test and save the p-value
+  p_values[sim_run] <- t.test(drug_group, placebo_group, 'two.sided')$p.value
+}
+
+# compute power by determining the proportion of p_values that are less than 0.05
+power <- mean(p_values < 0.05)
+power
+```
+```{r powersim_exercise-check}
+grade_code(incorrect='Try again...')
+
+```
