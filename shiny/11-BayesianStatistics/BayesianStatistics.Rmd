@@ -1,0 +1,87 @@
+---
+title: "Bayesian Statistics"
+output: 
+  learnr::tutorial:
+    progressive: true
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(gradethis)
+library(tidyverse)
+library(assertthat)
+library(ggplot2)
+knitr::opts_chunk$set(echo = FALSE)
+tutorial_options(exercise.eval = FALSE)
+knitr::opts_chunk$set(exercise.checker = gradethis::grade_learnr)
+
+```
+
+## Bayesian statistics
+
+The goal of Bayesian statistics is to infer the features of the process that gives rise to data, using the data along with any other knowledge that we have.   In this tutorial we will walk through a very simple example of how to perform Bayesian inference.
+
+In this example, we will try to infer the location of a submarine from the bubbles that we observe on the surface of the ocean.  First, let's create some code to simulate the way that a bubble travels from a submarine to the surface.  We will make some simplifying assumptions -- namely that there are no currents, and that bubbles travel in a random way as they float up.  We will also assume that we are only interested in location along a single dimension (that is, a line).
+
+First, let's create some code to simulate bubbles floating to the surface. Let's say that the submarine is 1000 feet underwater -- we will model the movement of the bubble each foot along the way, so that we simulate 1000 random movements of the bubble along our line.  Let's further assume that we know that the standard deviation of these random movements is 2 inches (or 1/6 feet) for every foot that the bubble floats up. To simulate the movement of the bubble, we can start at the true location of the submarine (which we will say is at location 10 for this example), and then add a large number of random samples from a normal distribution.  For this example, we will simulate 2500 bubbles.
+
+```{r bubblesim, exercise=TRUE}
+
+set.seed(12345)
+
+num_bubbles <- 2500
+distance_feet <- 1000
+bubble_sd <- 1/6
+sub_location <- 10
+
+bubble_data <- data.frame(surface_location = array(dim=num_bubbles))
+
+for (bubble in 1:num_bubbles){
+  random_movements <- rnorm(distance_feet, sd=bubble_sd)
+  bubble_data$surface_location[bubble] <- sub_location + sum(random_movements)
+}
+
+```
+
+#### Exercise
+
+Plot a histogram of the location of the bubbles along the surface, along with a red vertical line at the true location of the sub.  Use a bin width of 1 foot for the histogram.
+
+```{r bubbleplot, exercise=TRUE, exercise.setup='bubblesim_setup'}
+
+ggplot(bubble_data, aes(surface_location)) + 
+  geom_histogram(binwidth=1) + 
+  geom_vline(xintercept = sub_location, color='red') +
+  geom_vline(xintercept = mean(bubble_data$surface_location), color='blue', )
+
+```
+
+
+This looks very much like a normal distribution.  Let's overlay a plot of a normal distribution (with the same mean and standard deviation as our bubble locations) and see how well it fits.
+
+```{r}
+
+ggplot(bubble_data, aes(surface_location)) + 
+  geom_histogram(aes(y =..density..), binwidth=1) + 
+  geom_vline(xintercept = sub_location, color='red') +
+  stat_function(fun = dnorm, args = list(mean = mean(bubble_data$surface_location),
+                                         sd = sd(bubble_data$surface_location)), color='orange')
+
+```
+
+The bubble locations seem to be normally distributed -- for good reason!  Remember that the central limit theorem tells us that the sampling distribution of the mean tends to be normally distributed as the sample size gets larger, regardless of the underlying distribution that generates the data. In this case, each bubble location is the mean of many small random movements (which in this case are also normal).   Given this, for the rest of the example we will assume that the distribution of bubbles is normal, which makes our computations much easier.
+
+## Bayesian updating
+
+One way to view Bayesian statistics is as a tool to update our beliefs based on data that we collect.  Let's say that our search party was hunting around the ocean, and initially saw 5 bubbles, at the following locations:
+
+```{r updating1, exercise=TRUE}
+
+initial_locations <- c(8.13, 7.05, 5.78, 19.46, 15.03)
+
+initial_mean <- mean(initial_locations)
+initial_sd <- sd(initial_locations)
+print(c(initial_mean, initial_sd))
+```
+
