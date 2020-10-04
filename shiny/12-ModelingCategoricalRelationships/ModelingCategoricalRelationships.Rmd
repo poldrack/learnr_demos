@@ -1,0 +1,428 @@
+---
+title: "Modeling Categorical Relationships"
+output: 
+  learnr::tutorial:
+    progressive: true
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(gradethis)
+library(tidyverse)
+library(assertthat)
+library(ggplot2)
+library(BayesFactor)
+knitr::opts_chunk$set(echo = FALSE)
+tutorial_options(exercise.eval = FALSE)
+knitr::opts_chunk$set(exercise.checker = gradethis::grade_learnr)
+
+```
+
+## Categorical data
+
+By *categorical data* we generally refer to data containing the number or proportion of observations that fall into particular  *categories*.  In this tutorial you will learn how to perform chi-squared tests to test for differences between conditions and to test for independence between variables.  You will compute these statistics "from scratch" so that you understand where they come from, but you will also see how to perform them using the built-in R command for chi-squared tests.
+
+As an example, we will return to the course survey data that we discussed in a previous tutorial.  We would like to test the whether there is a relationship between having taken a statistics class before and having programming experience.  
+
+### Pipes
+
+Before we do our analysis, we will introduce a new concept known as a *pipe*, which is part of the *Tidyverse* set of function that we have mentioned before.  The pipe, which is specified as `%>%`, allows us to string together several commands that are meant to produce a single output.  In this case, let's say that we want to load our survey data file (using a custom function called `get_survey_data()`) and create a new variable called *programmed_before* (as you did in a previous exercise), which is true for anyone with a value greater than one in the *programming_experience* variable. Then we want to select only the *programmed_before* and *stats_before* variables, and filter out any observations that have a missing value for those variables.  First, let's see how we would do this without using pipes:
+
+```{r survey_setup, echo=FALSE, message=FALSE}
+get_survey_data <- function(){
+  survey_data_orig <- read_csv('https://raw.githubusercontent.com/poldrack/learnr_demos/master/data/surveydata.csv')
+  return(survey_data_orig %>%
+    filter(year %in% c('1', '2', '3', '4')) %>%
+    mutate(year=as.integer(year)))
+}
+
+survey_data <- get_survey_data() 
+
+year_count <- survey_data %>%
+  count(year) 
+
+p_year <- survey_data %>%
+  count(year) %>%
+  mutate(p=n / sum(n))
+
+expected <- sum(year_count$n) / 4
+
+chi_squared <- sum((year_count$n - expected)**2 / expected)
+
+pvalue <- pchisq(chi_squared, df=3, lower.tail=FALSE)
+
+```
+
+
+```{r nopipe, exercise=TRUE, message=FALSE, exercise.setup='survey_setup'}
+
+survey_data <- get_survey_data()
+survey_data_newvar <- mutate(survey_data,
+                      programmed_before=programming_experience > 1)
+survey_data_selected <- select(survey_data_newvar, c(programmed_before, stats_before))
+survey_data_clean <- drop_na(survey_data_selected)
+
+glimpse(survey_data_clean)
+
+```
+
+Each of the commands (after initially loading the file) takes the *survey_data* data frame, passes it into another function in order to perform one of our desired operations, and then saves the result back to the same variable name.  We could do this instead using pipes:
+
+```{r pipe, exercise=TRUE, exercise.setup='survey_setup'}
+
+survey_data_clean <- survey_data %>%
+  mutate(programmed_before=programming_experience > 1) %>%
+  select(c(programmed_before, stats_before)) %>%
+  drop_na()
+
+glimpse(survey_data_clean)
+```
+
+You should notice a couple of things here.  First, notice that we no longer need to provide the functions (`mutate()`, `select()`, and `drop_na()`) with the name of the data frame that is being used to perform the operation.  When we use a pipe, the function automatically realizes that the data being piped into the function should take the place of the data frame that we would usually specify by name.  Second, notice that the *survey_data* data frame that results from this command contains exactly the same results as the one generated in the previous chunk; that is, the results from all of the commands that have been piped together are assigned to the variable name at the top.  This can be a bit confusing at first; you should really think of it as the pipe commands turning all of these lines into a single long command, whose entire result is being assigned to the variable name that sits to the left of `<-`.
+
+As we go forward and encounter more complicated workflows for data analysis, pipes can be useful to help make our code more streamlined and understandable.
+
+#### Exercise
+
+Using the survey data loaded above, combine a set of commands using pipes to perform the following operations:
+
+- create a new variable called *expert_programmer* that is true for anyone who has the value 7 for the *programming_experience* variable
+- use the `select()` function to remove all variables except for *programming_experience* and *year*
+- remove any rows that contain NA values
+
+```{r expert, exercise=TRUE, exercise.setup='survey_setup'}
+survey_data_expert <- survey_data ...
+
+glimpse(survey_data_expert)
+
+```
+
+```{r expert-solution}
+survey_data_expert <- survey_data %>%
+  mutate(expert_programmer=programming_experience==7) %>%
+  select(programming_experience, year) %>%
+  drop_na()
+
+glimpse(survey_data_expert)
+```
+
+```{r expert-check}
+grade_code(incorrect='Try again...')
+```
+
+## Computing the chi-squared statistic
+
+The simplest way to use a chi-squared test is to test whether the counts of several different groups are different from one another.  In this case, the null hypothesis is that they are the same, and the chi-squared statistic quantifies the amount of evidence against that null hypothesis.  As a reminder, the chi-squared statistic is defined as:
+
+$$
+\chi^2 = \sum_i\frac{(observed_i - expected_i)^2}{expected_i}
+$$
+
+Let's start by testing a simple hypothesis with our survey data: Whether the number of students from different class years is the same or different.  First, let's filter the data to remove 5+ year and graduate students, since we would like to focus only on years 1-4.  We will then count the number of cases for each year using the `count()` function.
+
+```{r summyear, exercise=TRUE, exercise.setup='survey_setup', message=FALSE, warning=FALSE}
+year_count <- survey_data %>%
+  count(year) 
+
+year_count
+```
+
+
+To compute our chi-squared statistic, we need to know what the expected count is for each value under the null hypothesis. In this case the null hypothesis is that the counts should be equal in all of the cells, so we would obtain our expected count by simply dividing the total count equally across the four different years:
+
+```{r expected, exercise=TRUE, exercise.setup='survey_setup'}
+expected <- sum(year_count$n) / 4
+
+expected
+```
+
+Then we can compute the statistic:
+
+```{r cs, exercise=TRUE, exercise.setup='survey_setup'}
+chi_squared <- sum((year_count$n - expected)**2 / expected)
+
+chi_squared
+```
+
+Now we need to determine how likely a chi-squared value this extreme or more would be under the null hypothesis. We can do this using the `pchisq()` function, which gives us the cumulative probability of a particular chi-squared value.  To do this, we need to specify the *degrees of freedom* for the test, which for a simple chi-squared test is $N - 1$.  Because the `pchisq()` command defaults to presenting the lower tail probability (that is, the probability of a value smaller than our statistic), we also need to specify `lower.tail=FALSE` so that it will provide the upper tail probability.
+
+```{r pval, exercise=TRUE, exercise.setup='survey_setup'}
+pvalue <- pchisq(chi_squared, df=3, lower.tail=FALSE)
+
+pvalue
+```
+
+
+We can compare this to the result from the built-in `chisq.test()` function:
+
+```{r rtest, exercise=TRUE, exercise.setup='survey_setup'}
+chisq.test(year_count$n)
+```
+
+
+#### Exercise
+
+A researcher would like to test whether the there is an imbalance in three different bird species in a particular ecosystem.  They perform a study in which they observe and count the number of each species, obtaining the values 35, 51, and 48 for the three species.  Perform a chi-squared test (using the built-in R function) to test the null hypothesis that the number of birds from each species in the population is equal.
+
+```{r birds, exercise=TRUE}
+bird_data <- ...
+
+____(____)
+
+```
+
+```{r birds-solution}
+bird_data <- c(35, 51, 48)
+
+chisq.test(bird_data)
+```
+
+```{r birds-check}
+grade_code(incorrect='Try again...')
+```
+
+
+```{r birds-mc, echo=FALSE}
+question("What would you conclude from this result?",
+  answer("The null hypothesis of no difference between species cannot be rejected", correct=TRUE),
+  answer("There is a significant difference in prevalence between groups")
+)
+```
+
+```{r birds2-mc, echo=FALSE}
+question("What would you expect if the sample size was ten times larger with the same proportion of each bird (that is, values of 350, 510, and 480)?",
+  answer("It is more likely that there would be a significant effect", correct=TRUE),
+  answer("It is less likely that there would be a significant effect"),
+  answer("The likelihood of a significant effect would be exactly the same")
+)
+```
+
+## Chi-squared test for independence
+
+```{r survey_setup2, echo=FALSE, message=FALSE}
+get_survey_data <- function(){
+  survey_data_orig <- read_csv('https://raw.githubusercontent.com/poldrack/learnr_demos/master/data/surveydata.csv')
+  return(survey_data_orig %>%
+    filter(year %in% c('1', '2', '3', '4')) %>%
+    mutate(year=as.integer(year)))
+}
+
+survey_data <- get_survey_data() 
+
+year_count <- survey_data %>%
+  count(year) 
+
+
+p_year <- survey_data %>%
+  count(year) %>%
+  mutate(p=n / sum(n))
+
+p_stats_before <- survey_data %>%
+  count(stats_before) %>%
+  mutate(p=n / sum(n))
+
+marginal_combined <- crossing(
+    select(p_stats_before, stats_before, prob_stats=p),
+    select(p_year, year, prob_year=p)) 
+
+expected_prob <- marginal_combined %>%
+  mutate(prob_independent=prob_year*prob_stats,
+         expected_n=prob_independent*nrow(survey_data)) %>%
+  select(-c(prob_stats, prob_year))
+
+observed_prob<- survey_data %>% 
+  count(year, stats_before)
+
+full_table <- inner_join(expected_prob, observed_prob)
+
+chi_squared <- full_table %>%
+  mutate(csvals=((n - expected_n)**2)/expected_n) %>%
+  summarize(chi_squared=sum(csvals)) %>%
+  pull(chi_squared)
+
+pvalue <- pchisq(chi_squared, df=3, lower.tail=FALSE)
+
+cstable <- observed_prob %>% 
+  pivot_wider(names_from =year, values_from=n) %>%
+  select(-stats_before)
+
+```
+
+Another way to use the chi-squared test is to test whether two variables are independent from one another.  Let's return to the survey data, and ask whether there is a relationship between the year of the student and whether they have taken a statistics class before.  The statistic is computed in exactly the same way as we did for the simple test above; the difference comes about in how we compute the expected values.  Remember from earlier our discussion of probability theory that if two variables are independent then the joint probability is simply the product of the two *marginal* probabilities:
+
+$$
+P(A \cap B) = P(A) * P(B) \space \textit{iff} \space A \perp \!\!\! \perp B
+$$
+
+where $\perp \!\!\! \perp$ is the symbol for independence.
+
+Thus, if our two variables are independent, then the probability of any combination of the two variables is simply the product of the probabilities for those values.
+
+First let's compute the marginal probabilities for the different years (using the variable *year*) and for having taken a statistics class before (using the variable *stats_before*).
+
+```{r pyear, exercise=TRUE, exercise.setup='survey_setup2', message=FALSE}
+p_year <- survey_data %>%
+  count(year) %>%
+  mutate(p=n / sum(n))
+
+p_year
+```
+
+The `count()` function generates a data frame that contains a variable called *n* with the count for each value of the *year* variable.  We convert these to probabilities by dividing by the total number of observations (obtained by summing across *n*).
+
+#### Exercise
+
+Compute the marginal probability for having taken a statistics class before. First, create a version of the data frame that is grouped by the *stats_before* variable. Then, compute the probability of each value of this variable (adapting the code that we used above for the *year* variable):
+
+```{r pstats, exercise=TRUE, exercise.setup='survey_setup2'}
+p_stats_before <- ...
+
+p_stats_before
+```
+
+```{r pstats-solution}
+p_stats_before <- survey_data %>%
+  count(stats_before) %>%
+  mutate(p=n / sum(n))
+
+p_stats_before
+```
+```{r pstats-check}
+grade_code(incorrect='Try again...')
+```
+
+
+
+Now, let's use the *p_year* and *p_stats_before* variables to compute the expected probability for each combination of *year* and *stats_before*.  To do this, we need to combine those two individual data frames into a single data frame that contains all combinations of their values, which we can do using the `crossing()` function:
+
+```{r crossing, exercise=TRUE, exercise.setup='survey_setup2'}
+
+marginal_combined <- crossing(
+    select(p_stats_before, stats_before, prob_stats=p),
+    select(p_year, year, prob_year=p)) 
+
+marginal_combined
+```
+
+Then we can compute the expected marginal probabilities under independence by simply multiplying the marginal probabilities for each combination of *year* and *stats_before*, and then compute the expected number of observations by multiplying those probabilities by the total number of observations:
+
+```{r expected2, exercise=TRUE, exercise.setup='survey_setup2'}
+
+expected_prob <- marginal_combined %>%
+  mutate(prob_independent=prob_year*prob_stats,
+         expected_n=prob_independent*nrow(survey_data)) %>%
+  select(-c(prob_stats, prob_year))
+
+expected_prob
+```
+
+We also need to compute the observed frequencies for each combination of the two variables.  We can do this by providing the `count()` function with both variable names, so that it counts each possible combination:
+
+```{r observed2, exercise=TRUE, exercise.setup='survey_setup2'}
+
+observed_prob<- survey_data %>% 
+  count(year, stats_before)
+
+observed_prob
+```
+
+Now we can put the expected and observed data frames together using the `inner_join()` function, which aligns the data frames based on their shared variables:
+
+```{r fulltable, exercise=TRUE, exercise.setup='survey_setup2'}
+full_table <- inner_join(expected_prob, observed_prob)
+
+full_table
+```
+
+We can use the data in this table to compute our chi-squared value:
+
+```{r cs2, exercise=TRUE, exercise.setup='survey_setup2'}
+chi_squared <- full_table %>%
+  mutate(csvals=((n - expected_n)**2)/expected_n) %>%
+  summarize(chi_squared=sum(csvals)) %>%
+  pull(chi_squared)
+
+chi_squared
+```
+
+We can then compute the p-value as we did earlier. For a test of independence, the degrees of freedom are equal to $(N_x - 1) * (N_y - 1)$ where $N_x$ and $N_y$ are the number of levels for each of the variables respectively, which in this case is $(4 - 1)  * (2 - 1) = 3$.
+
+```{r pval2, exercise=TRUE, exercise.setup='survey_setup2'}
+pvalue <- pchisq(chi_squared, df=3, lower.tail=FALSE)
+
+pvalue
+```
+
+Let's compare this to the results from the built-in chi-squared test.  To use this function, we first need to reshape the data into a 2-dimensional table, which we can do using the `pivot_wider()` function:
+
+```{r cstable, exercise=TRUE, exercise.setup='survey_setup2'}
+cstable <- observed_prob %>% 
+  pivot_wider(names_from =year, values_from=n) %>%
+  select(-stats_before)
+
+cstable
+```
+
+```{r cstest2, exercise=TRUE, exercise.setup='survey_setup2'}
+chisq.test(cstable)
+
+
+```
+
+
+#### Exercise
+```{r icu_setup}
+icu_data <- data.frame(nondiabetic=c(199,1067),
+                       diabetic=c(41,73))
+
+```
+
+A study by [Roncon et al. 2020](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7195018/) combined data from several individual studies to test whether people with diabetes are more likely to develop severe symptoms of COVID-19 (defined by admission to the intensive care unit) compared to individuals without diabetes.  Their combined data across four studies were as follows:
+
+|                     | Non-diabetic | Diabetic |
+|---------------------|--------------|----------|
+| Admitted to ICU     | 199          | 41       |
+| Not admitted to ICU | 1067         | 73       |
+
+For this exercise, you should first create a data frame called *icu_data* containing these data.  you should put the values into variables called *nondiabetic* and *diabetic* respectively.
+
+```{r icudata, exercise=TRUE, exercise.setup='icu_setup'}
+icu_data <- ...
+
+icu_data
+```
+
+```{r icudata-solution}
+
+icu_data <- data.frame(nondiabetic=c(199,1067),
+                       diabetic=c(41,73))
+icu_data
+```
+
+```{r icudata-check}
+grade_code(incorrect='Try again...')
+```
+
+
+Then, perform a chi-squared test to test the null hypothesis of no relationship between ICU admission and diabetes, using the built-in R function.
+
+```{r icutest, exercise=TRUE, exercise.setup='icu_setup'}
+...
+```
+
+```{r icutest-solution}
+chisq.test(icu_data)
+```
+
+```{r icutest-check}
+grade_code(incorrect='Try again...')
+```
+
+```{r icudata-mc, echo=FALSE}
+question("What would you conclude from this result?",
+  answer("The null hypothesis of independence between ICU admission and diabetes cannot be rejected"),
+  answer("There is a significant relationship between ICU admission and diabetes", correct=TRUE)
+)
+```
+
