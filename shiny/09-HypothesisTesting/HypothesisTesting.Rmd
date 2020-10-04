@@ -15,13 +15,6 @@ knitr::opts_chunk$set(echo = FALSE)
 tutorial_options(exercise.eval = FALSE)
 knitr::opts_chunk$set(exercise.checker = gradethis::grade_learnr)
 
-if (Sys.getenv('SHINY_DATADIR') != ""){
-  datadir = Sys.getenv('SHINY_DATADIR')
-} else {
-  datadir = '../../data'
-}
-
-
 load_flight_data <- function(){
     load(url('https://github.com/poldrack/learnr_demos/blob/master/data/sfo_june_flights.RData?raw=true'))
     sfo_june_flights <- sfo_june_flights %>%
