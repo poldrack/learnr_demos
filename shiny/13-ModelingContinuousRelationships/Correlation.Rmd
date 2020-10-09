@@ -1,0 +1,243 @@
+---
+title: "Correlation"
+output: 
+  learnr::tutorial:
+    progressive: true
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(gradethis)
+library(tidyverse)
+library(assertthat)
+library(ggplot2)
+library(NHANES)
+knitr::opts_chunk$set(echo = FALSE)
+tutorial_options(exercise.eval = FALSE)
+knitr::opts_chunk$set(exercise.checker = gradethis::grade_learnr)
+
+```
+
+## Correlation
+
+The correlation coefficient is a common way to quantify the relationship between two continuous variables.  In this tutorial we will work through the computation of the correlation coefficient, and then look at how it behaves across samples.
+
+```{r agebp_setup}
+set.seed(1234)
+sample_size <- 100
+
+NHANES_sample <- NHANES %>%
+  select(c(Age, BPSysAve)) %>%
+  drop_na() %>%
+  slice_sample(n=sample_size)
+
+N <- nrow(NHANES_sample)
+
+deviation_Age <- NHANES_sample$Age - mean(NHANES_sample$Age)
+deviation_BPSysAve <- NHANES_sample$BPSysAve- mean(NHANES_sample$BPSysAve)
+covariance <- sum(deviation_Age * deviation_BPSysAve) / (N - 1)
+r <- covariance/(sd(NHANES_sample$Age)*sd(NHANES_sample$BPSysAve))
+t_value <- (r * sqrt(N - 2)) / sqrt(1 - r**2)
+
+```
+
+Let's start with a simple example, in which we will compute the correlation coefficient for data that we will sample from the NHANES dataset.  Let's start by obtaining a sample of 100 individuals with the *Age* and *BPSysAve* (systolic blood pressure, averaged over three measurements) variables.
+
+```{r sample, exercise=TRUE}
+set.seed(1234)
+sample_size <- 100
+
+NHANES_sample <- NHANES %>%
+  select(c(Age, BPSysAve)) %>%
+  drop_na() %>%
+  slice_sample(n=sample_size)
+
+glimpse(NHANES_sample)
+```
+
+
+#### Exercise
+
+Plot the relationship between *Age* and *BPSysAve* in the *NHANES_sample* data frame using a scatterplot.
+
+```{r agebp, exercise=TRUE, exercise.setup='agebp_setup'}
+...
+
+```
+
+```{r agebp-solution}
+ggplot(NHANES_sample, aes(x=Age, y=BPSysAve)) + geom_point()
+```
+
+
+```{r agebp-check}
+grade_code(incorrect='Try again...')
+```
+
+### Computing the correlation coefficient
+
+Now let's compute the correlation by hand.  Remember that the correlation is computed as:
+
+$$
+r = \frac{covariance}{s_xs_y} = \frac{\sum_{i=1}^n (x_i - \bar{x})(y_i - \bar{y})}{(N - 1)s_x s_y}
+$$
+
+To compute the covariance by hand, we can first compute the deviations from the mean for each variable and then multiple those together and divide by $N - 1$.
+
+```{r cov, exercise=TRUE, exercise.setup='agebp_setup'}
+N <- nrow(NHANES_sample)
+deviation_Age <- NHANES_sample$Age - mean(NHANES_sample$Age)
+deviation_BPSysAve <- NHANES_sample$BPSysAve- mean(NHANES_sample$BPSysAve)
+covariance <- sum(deviation_Age * deviation_BPSysAve) / (N - 1)
+covariance
+```
+
+Let's confirm that this gives us the same answer as the built in covariance function, `cov()`:
+
+```{r rcov, exercise=TRUE, exercise.setup='agebp_setup'}
+cov(NHANES_sample$Age, NHANES_sample$BPSysAve)
+```
+
+The correlation (usually called *r*) is then simply the covariance divided by the product of the standard deviations for each variable:
+
+```{r corr, exercise=TRUE, exercise.setup='agebp_setup'}
+r <- covariance/(sd(NHANES_sample$Age)*sd(NHANES_sample$BPSysAve))
+r
+```
+
+Compare this to the result from the built-in correlation function, `cor()`:
+
+```{r rcorr, exercise=TRUE, exercise.setup='agebp_setup'}
+cor(NHANES_sample$Age, NHANES_sample$BPSysAve)
+
+```
+
+
+### Hypothesis testing for correlations
+
+We can test the null hypothesis that $r \le 0$ by converting the correlation coefficient into a *t* statistic:
+
+$$
+\textit{t}_r =  \frac{r\sqrt{N-2}}{\sqrt{1-r^2}}
+$$
+
+```{r t, exercise=TRUE, exercise.setup='agebp_setup'}
+t_value <- (r * sqrt(N - 2)) / sqrt(1 - r**2)
+t_value
+```
+
+And we can then obtain a p-value by determining the likelihood of finding a value as great as or greater than this in a null *t* distribution with $N - 2$ degrees of freedom:
+
+```{r pvalue, exercise=TRUE, exercise.setup='agebp_setup'}
+p_value <- pt(t_value, N - 2, lower.tail=FALSE)
+p_value
+```
+
+We can check our values against the built-in `cor.test()` function:
+
+```{r cortest, exercise=TRUE, exercise.setup='agebp_setup'}
+cor.test(NHANES_sample$Age, NHANES_sample$BPSysAve, alternative='greater')
+```
+
+```{r corr-mc, echo=FALSE}
+question("What would you conclude from this result?",
+  answer("The null hypothesis of r <= 0 cannot be rejected"),
+  answer("There is a significant correlation between age and blood pressure", correct=TRUE)
+)
+```
+
+### Rank correlation
+
+When the data are highly skewed or outliers are present, the results from the Pearson correlation coefficient can be biased. One way to make correlation analyses more robust is to use the *Spearman rank correlation*, which computes the Pearson correlation on the ranks of the data points rather than on the values themselves.  Let's see how we can compute that by hand; we can convert the data to rank values using the `rank()` function.
+
+```{r rankcorr, exercise=TRUE, exercise.setup='agebp_setup'}
+cor(rank(NHANES_sample$Age), rank(NHANES_sample$BPSysAve))
+
+```
+
+Here we can see that the value of rank correlation is very close to the value for the Pearson correlation, because the data do not have any major outliers.  There is also a built-in way to compute the Spearman correlation, using the *method='spearman'* argument to the `cor()` function:
+
+```{r spearman, exercise=TRUE, exercise.setup='agebp_setup'}
+cor(NHANES_sample$Age, NHANES_sample$BPSysAve, method='spearman')
+
+```
+
+#### Exercise
+
+In this exercise you will compute the rank correlation between two variables and then use the bootstrap to obtain a confidence interval for the rank correlation.  For this analysis, we will look at the relationship between two variables in the NHANES dataset: *DaysMentHlthBad* (which records the self-reported number of days participant's mental health was not good out of the past 30 days) and *SleepHrsNight* (which records the self-reported number of hours study participant usually gets at night on weekdays or workdays). 
+
+```{r correx, exercise=TRUE, exercise.setup='agebp_setup'}
+set.seed(1234)
+sample_size <- 100
+
+# create a new sample with the variables of interest
+NHANES_sample <- NHANES %>%
+  select(c(...)) %>%
+  drop_na() %>%
+  slice_sample(n=sample_size)
+
+# compute the spearman correlation using the cor() function with the spearman method
+rank_corr <- cor(...)
+
+# perform the bootstrap
+
+num_boostrap_samples <- 500
+
+bs_corrs <- array(dim=num_boostrap_samples)
+for (samp in 1:num_boostrap_samples){
+  # create the vbootstrap sample with replacement
+  bs_sample <- NHANES_sample %>%
+    slice_sample(n=sample_size, replace=TRUE)
+  bs_corrs[samp] <- ...
+}
+
+# compute the 95% confidence interval from the bootstrap distribution
+bootstrap_ci <- quantile(bs_corrs, c(0.025, 0.975))
+bootstrap_ci
+```
+
+```{r correx-solution}
+
+set.seed(1234)
+sample_size <- 100
+
+# create a new sample with the variables of interest
+NHANES_sample <- NHANES %>%
+  select(c(DaysMentHlthBad, SleepHrsNight)) %>%
+  drop_na() %>%
+  slice_sample(n=sample_size)
+
+# compute the spearman correlation
+rank_corr <- cor(NHANES_sample$DaysMentHlthBad, NHANES_sample$SleepHrsNight, method='spearman')
+
+# perform the bootstrap
+
+num_boostrap_samples <- 500
+
+bs_corrs <- array(dim=num_boostrap_samples)
+for (samp in 1:num_boostrap_samples){
+  bs_sample <- NHANES_sample %>%
+    slice_sample(n=sample_size, replace=TRUE)
+  bs_corrs[samp] <- cor(bs_sample$DaysMentHlthBad, bs_sample$SleepHrsNight, method='spearman')
+}
+
+# compute the 95% confidence interval from the bootstrap distribution
+bootstrap_ci <- quantile(bs_corrs, c(0.025, 0.975))
+bootstrap_ci
+
+```
+
+```{r correx-check}
+grade_code(incorrect='Try again...')
+```
+
+
+```{r rank-mc, echo=FALSE}
+question("What would you conclude from this result?",
+  answer("The null hypothesis of r <= 0 cannot be rejected", correct=TRUE),
+  answer("There is a significant rank correlation between mental health and hours of sleep")
+)
+```
+
+
