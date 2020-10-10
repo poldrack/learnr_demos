@@ -1,0 +1,222 @@
+---
+title: "General Linear Model"
+output: 
+  learnr::tutorial:
+    progressive: true
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(gradethis)
+library(tidyverse)
+library(assertthat)
+library(ggplot2)
+library(NHANES)
+knitr::opts_chunk$set(echo = FALSE)
+tutorial_options(exercise.eval = FALSE)
+knitr::opts_chunk$set(exercise.checker = gradethis::grade_learnr)
+
+```
+
+## General Linear Model
+
+In this tutorial we will cover how to fit a linear model to data.  We will use an [openly available dataset](https://www.kaggle.com/harlfoxem/housesalesprediction?select=kc_house_data.csv) with data from home sales in King County, WA during 2015-2016, to try to understand the various factors that are related to the price of a home.  To simplify things, we will only look at sales during the month of March 2015 (of which there were 1,875).  We can load these data using a custom function called `get_house_price_data()`.
+
+```{r house_setup, echo=FALSE, message=FALSE}
+
+get_house_price_data <- function(){
+  read_csv('https://raw.githubusercontent.com/poldrack/learnr_demos/master/data/kc_house_data_mar2015.csv') %>%
+    # filter(date >= as.Date("2015-03-01") & date <= as.Date("2015-03-31")) %>%
+    rename(size=sqft_living) %>% 
+    mutate(waterfront=as.factor(waterfront),
+           has_view=as.factor(view > 0))
+}
+house_data <- get_house_price_data()
+lm_result <- lm(price ~ size, data=house_data)
+lm_view_result <- lm(price ~ size + has_view, data=house_data)
+lm_view_int <- lm(price ~ size*has_view, data=house_data)
+
+```
+
+```{r house, exercise=TRUE,  exercise.setup='house_setup', message=FALSE}
+
+house_data <- get_house_price_data()
+
+glimpse(house_data)
+
+```
+
+Let's start by looking at the relationship between the size of a house (in square feet), contained in the *size* variable, and its sale price, contained in the *price* variable.  
+
+#### Exercise
+
+Create a scatterplot showing the relationship between house size (on the X axis) and price (on the Y axis). Specify *size=0.5* in the geometry for the points in the scatterplot (as in the example above), to reduce clutter given the large number of data points.
+
+```{r plot, exercise=TRUE, exercise.setup='house_setup'}
+
+```
+
+
+```{r plot-solution}
+ggplot(house_data, aes(x=size, y=price)) + 
+  geom_point(size=0.5)
+```
+
+```{r plot-check}
+grade_code(incorrect='Try again...')
+```
+
+### Using `lm()`
+
+We can see from the plot that price generally goes up as the size of the house goes up.  Let's use the `lm()` function to estimate the linear model that relates these two variables.  
+
+```{r lm, exercise=TRUE,exercise.setup='house_setup'}
+
+lm_result <- lm(1 + price ~ size, data=house_data)
+lm_result
+
+```
+
+The *1* in the formula stands for the intercept; we don't actually have to include it in the formula, since `lm()` will automatically add an intercept unless we tell it to do otherwise.  It is specified by a *1* because the intercept coefficient is the same for all data points; that is, its value doesn't depend on anything else in the model. On the other hand, the size coefficient is multiplied by the house size for each data point, so it contributes a different amount to each data point depending on the size of the house.
+
+
+```{r lm-mc, echo=FALSE}
+question("Which of the following is correct?  Select all that apply.",
+  answer("The intercept reflects the estimated price of a house with zero square feet size", correct=TRUE),
+  answer("For every extra square foot, the house on average costs $275.5 more", correct=TRUE),
+  answer("To compute the estimated cost of a house, you would multiply its size by the parameter for sqft_living"),
+  answer("To compute the estimated cost of a house, you would multiply its size by the intercept"),
+  random_answer_order = TRUE
+)
+```
+
+
+### Extracting coefficients from the `lm()` results
+
+In the exercise below you will need to extract the coefficients from the model in order to use them in a plot.  
+The `lm()` function returns an object that contains a number of different components, which we can see using the `names()` function:
+
+```{r lmnames, exercise=TRUE, exercise.setup='house_setup'}
+names(lm_result)
+```
+
+To extract one of these components from the object, we use the `$` operator, just as we do to extract variables from a data frame. In this case, we want to extract the *coefficients* component:
+
+```{r coefs, exercise=TRUE, exercise.setup='house_setup'}
+lm_result$coefficients
+```
+
+You can see here that there are two entries, one for each of the coefficients in the model.  To extract one of these, we can put its name into brackets.  For example, to extract the intercept term, which is named *"(Intercept)"*, we would use:
+
+```{r int, exercise=TRUE, exercise.setup='house_setup'}
+
+lm_result$coefficients["(Intercept)"]
+
+```
+
+
+
+#### Exercise
+
+Create a version of the scatterplot from the previous exercise, but overlay the regression line in blue. You can use `geom_abline()` to add the line; see the help for that function to figure out how to specify the slope and intercept.  Also, specify *size=0.5* in the geometry for the points in the scatterplot (as in the example above), to reduce clutter given the large number of data points.
+
+
+```{r plotline, exercise=TRUE, exercise.setup='house_setup'}
+
+```
+
+
+```{r plotline-solution}
+ggplot(house_data, aes(x=size, y=price)) + 
+  geom_point(size=0.5) + 
+  geom_abline(intercept=lm_result$coefficients['(Intercept)'],
+              slope=lm_result$coefficients['size'], color='blue')
+```
+
+```{r plotline-check}
+grade_code(incorrect='Try again...')
+```
+
+
+### Statistical tests on the regression model
+
+We often want to perform a statistical test to as whether there is a statistically significant relationship between our independent and dependent variables.  This can be obtained using the `summary()` function:
+
+
+```{r lmstats, exercise=TRUE, exercise.setup='house_setup' }
+
+summary(lm_result)
+```
+
+
+Hre we see two important things.  First, as expected, there is a statistically significant relationship between house price and size; the p-value is reported as $<2e-16$, which means that it is smaller than $2 * 10^{-16}$ - that is, very small!  Second, we can also get some information about the size of the relationship.  As discussed in the text, one way to quantify the effect size in a regression analysis is *R-squared*, which describes the amount of variance in the dependent variable that is described by the independent variable. In this case, we see from the summary that $R^2 = 0.447$, meaning that house size explains almost half of the variability in home prices -- a very large effect.
+
+Now let's test another variable to see if it has an additional effect: Whether or not the house has a view (stored in the variable *has_view*).  To test this, we simply add the new variable into our formula:
+
+```{r lmview,exercise=TRUE, exercise.setup='house_setup' }
+lm_view_result <- lm(price ~ size + has_view, data=house_data)
+summary(lm_view_result)
+```
+
+This model now has three coefficients:
+
+- *(Intercept)*: the intercept, added to all data points equally. Equivalent to the estimated price of a house without a view of size zero.
+- *size*: the slope relating size to price for all houses
+- *has_viewTRUE*: the estimated difference in price between a house of size zero with a view compared to one without
+
+This shows us that the effect of size remains signficiant, but we also see that there is a significant effect of having a view: houses with a view sell for almost $276,000 more on average.  However, notice that the R-squared did not increase that much, going from about 45% to about 50% of the variance.  Thus, the added impact of a waterfront view is relatively small.
+
+In essence, what we have done here is estimated a single slope that relates size to price, and then also computed the offset between homes with and without a view.  We can plot this by adding two lines:
+
+```{r viz,exercise=TRUE, exercise.setup='house_setup' }
+ggplot(house_data, aes(x=size, y=price, color=has_view, group=has_view)) + 
+  geom_point(size=0.5) + 
+  geom_abline(intercept=lm_view_result$coefficients['(Intercept)'],
+              slope=lm_view_result$coefficients['size'], color='red') + 
+   geom_abline(intercept=lm_view_result$coefficients['(Intercept)'] + lm_view_result$coefficients['has_viewTRUE'] ,
+              slope=lm_view_result$coefficients['size'], color='blue') 
+ 
+```
+
+
+### Interactions
+
+In the previous analysis we assumed that the relationship between size and price was the same for houses with and without a view -- we denoted this by using the formula *price ~ size + has_view* to state that those effects are *additive*, that is, they simply add together.  This is seen in the fact that the predicted regression lines for each group are parallel.  However, if we look closely at the data it seems that there might be ab added bonus on larger houses with a view.  In the context of the general linear model, we say that there is an *interaction* between size and having a view; that is, the effect of house size on price differs depends on whether one has a view or not.  We can specify this in the model by multiplying rather than adding the effects:
+
+
+```{r lmviewint,exercise=TRUE, exercise.setup='house_setup' }
+lm_view_int <- lm(price ~ size*has_view, data=house_data)
+summary(lm_view_int)
+```
+
+The model now has four coefficients, which are interpreted as follows:
+
+- *(Intercept)*: the intercept, added to all data points equally. Equivalent to the estimated price of a house without a view of size zero.
+- *size*: the slope relating size to price for houses without a view
+- *has_viewTRUE*: the estimated difference in price between a house of size zero with a view compared to one without
+- *size:has_viewTRUE*: the difference in slopes relating size and price between houses with versus without a view.  
+
+```{r int-mc, echo=FALSE}
+question("What is the most appropriate interpretation of the interaction coefficient (size:has_viewTRUE)?",
+  answer("Every added square foot for a house with a view is worth about $121 more than for a house without a view", correct=TRUE),
+  answer("Homes with a view are larger on average by about 121 square feet"),
+  answer("The slope relating size to price for houses with a view is about $121 per square foot."),
+  random_answer_order = TRUE
+)
+```
+
+We can see how this model differs by plotting the regression lines for houses with an without a view:
+
+```{r vizint,exercise=TRUE, exercise.setup='house_setup' }
+ggplot(house_data, aes(x=size, y=price, color=has_view, group=has_view)) + 
+  geom_point(size=0.5) + 
+  geom_abline(intercept=lm_view_int$coefficients['(Intercept)'],
+              slope=lm_view_int$coefficients['size'], color='red') + 
+   geom_abline(intercept=lm_view_int$coefficients['(Intercept)'] + lm_view_int$coefficients['has_viewTRUE'] ,
+              slope=lm_view_int$coefficients['size'] + lm_view_int$coefficients['size:has_viewTRUE'], color='blue') 
+ 
+```
+
+
+
