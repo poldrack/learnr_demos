@@ -115,7 +115,7 @@ simpsons <- data.frame(name=c("Homer", "Marge", "Lisa", "Bart", "Maggie"),
 grade_code(incorrect='Try again...')
 ```
 
-Then, create a for loop that loops through an index from one to the number of rows in the data frame (which you can obtain using `nrows()`), use an if-then statement to test whether the individual is below the age of 18, and prints their name if they are. 
+Then, create a for loop that loops through an index from one to the number of rows in the data frame (which you can obtain using `nrow()`), use an if-then statement to test whether the individual is below the age of 18, and prints their name if they are. 
 
 ```{r names-setup, echo=FALSE}
 simpsons <- data.frame(name=c("Homer", "Marge", "Lisa", "Bart", "Maggie"),
