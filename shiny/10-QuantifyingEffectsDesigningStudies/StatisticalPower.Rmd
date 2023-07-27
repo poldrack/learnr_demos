@@ -32,7 +32,7 @@ question("What is the goal of statistical power analysis? Choose all that apply"
 
 ### Computing statistical power
 
-The most common usage of statistical power analysis is to determine the necessary sample size for a study, given the expected effect size.  Let's say that we want to perform a study to determine whether a particular drug treatment for COVID-19 is effective at reducing the length of hospitalization for people who have been hospitalized witht the disease.  To do this, we will randomly assign individuals to either receive the treatment, or to receive a placebo drug.  We want to determine how many people we need to test in order to be 80% sure that we find an effect if it is truly present.  We need to determine the effect size that we would like to be able to find; let's say that we think that a difference of two days in the length of hospitalization is a clinically important difference.  Based on published data, we can estimate that the standard deviation of the length of hospital stays is 6.
+The most common usage of statistical power analysis is to determine the necessary sample size for a study, given the expected effect size.  Let's say that we want to perform a study to determine whether a particular drug treatment for COVID-19 is effective at reducing the length of hospitalization for people who have been hospitalized with the disease.  To do this, we will randomly assign individuals to either receive the treatment, or to receive a placebo drug.  We want to determine how many people we need to test in order to be 80% sure that we find an effect if it is truly present.  We need to determine the effect size that we would like to be able to find; let's say that we think that a difference of one day in the length of hospitalization is a clinically important difference.  Based on published data, we can estimate that the standard deviation of the length of hospital stays is 6.
 
 ```{r power_setup}
 # data from https://bmcmedicine.biomedcentral.com/articles/10.1186/s12916-020-01726-3
@@ -43,7 +43,7 @@ sd_LOS = IQR/1.35
 
 ```
 
-Based on this, we can use the `power.t.test()` function to estimate the sample size that we would need in order to have 80% power to detect a true reduction of two days in hospital stay.  This function requires us to specify several different quantities:
+Based on this, we can use the `power.t.test()` function to estimate the sample size that we would need in order to have 80% power to detect a true reduction of one day in hospital stay.  This function requires us to specify several different quantities:
 
 - *delta*: the magnitude of the effect that we wish to find (in this case, 1 day)
 - *sd*: the standard deviation of the measurement (in this case, 6 days)
@@ -64,7 +64,7 @@ power.t.test(...
 
 ```{r power-solution}
 
-power.t.test(delta=2, sd=6, power=0.8, sig.level=0.05, type='two.sample', alternative = 'two.sided')
+power.t.test(delta=1, sd=6, power=0.8, sig.level=0.05, type='two.sample', alternative = 'two.sided')
 ```
 
 ```{r power-check}

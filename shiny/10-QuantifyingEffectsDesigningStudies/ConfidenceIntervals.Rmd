@@ -176,6 +176,8 @@ ci_lower <- my_sample_mean - normal_cutoff * my_sample_SEM
 
 ci_upper <- my_sample_mean + normal_cutoff * my_sample_SEM
 
+paste("CI", ci_lower, ci_upper)
+
 ```
 
 ```{r ci_exercise-check}

@@ -104,6 +104,7 @@ Using mutate, you can also create new variables whose values (i.e. observations)
 
 state_df_with_pop_millions <- mutate(state_df,
        population_millions=population/1000000)
+state_df_with_pop_millions
 ```
 
 ### Selecting multiple columns
